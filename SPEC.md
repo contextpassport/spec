@@ -1,0 +1,350 @@
+# Context Passport Specification
+
+**Version:** 1.0-draft  
+**Status:** Draft  
+**License:** CC0 1.0 Universal (public domain)  
+**Maintained by:** DarkMatter (darkmatterhub.ai)  
+**Repository:** github.com/bengunvl/context-passport
+
+---
+
+## Abstract
+
+Context Passport is an open standard for structured, verifiable context handoffs between AI agents. It defines a minimal JSON envelope that any agent, framework, or model can produce and consume — making multi-agent context handoffs interoperable, cryptographically verifiable, and auditable across systems.
+
+The goal of this specification is to become the standard interchange format for AI agent context across the AI ecosystem.
+
+---
+
+## 1. Motivation
+
+Multi-agent AI systems are becoming production infrastructure. As of 2025, teams routinely chain multiple AI agents together — researcher, writer, reviewer, validator — across different models, frameworks, and organizational boundaries.
+
+When Agent A hands work to Agent B today, the format is arbitrary. A string, a dictionary, a JSON blob with no fixed shape. This creates four unsolved problems:
+
+**1. Incompatibility.** Agents built with different frameworks cannot reliably exchange context. A LangGraph agent cannot hand context to a CrewAI agent without custom serialization code.
+
+**2. Schema drift.** When the output schema of Agent A changes, Agent B fails silently. There is no contract, no version, no detection mechanism.
+
+**3. No attribution.** The receiving agent does not know who produced the context, with which model, at what time, or whether it was modified in transit.
+
+**4. No verifiability.** Audit trails stored inside any single system can be modified by that system. There is no standard mechanism for proving that a chain of agent decisions was not altered after the fact.
+
+Context Passport solves all four.
+
+---
+
+## 2. Design Principles
+
+### 2.1 Minimal by design
+
+Context Passport defines the envelope, not the content. The `payload` block is open — agents put whatever they need inside it. The standard defines the fields that enable interoperability, attribution, and verification. Nothing more.
+
+### 2.2 Transport-independent
+
+Context Passport is a JSON document. It is not tied to HTTP, WebSockets, message queues, or any specific transport. Any system that can serialize and deserialize JSON can produce and consume Context Passports.
+
+### 2.3 Verifiable without trusting the issuer
+
+The SHA-256 hash chain enables any party holding a sequence of passports to verify the chain is intact — without trusting the system that stored them, without network access, and without any central authority.
+
+### 2.4 Versioned from the first release
+
+`schema_version` is a required field. All future versions of this specification will maintain backward compatibility with v1.0 passports, or will introduce a new major version number with a defined migration path.
+
+### 2.5 Open governance
+
+This specification is released under CC0 1.0 — no copyright, no restrictions. Any person or organization may implement, extend, or fork it without restriction or attribution requirement. The standard belongs to the community.
+
+---
+
+## 3. Specification
+
+### 3.1 Schema
+
+A Context Passport is a JSON object with the following structure. Fields marked **Required** must be present. All other fields are optional but recommended.
+
+```json
+{
+  "$schema":        "https://contextpassport.com/schema/v1.json",
+  "schema_version": "1.0",
+
+  "id":         "ctx_{unix_ms}_{6_hex_bytes}",
+  "parent_id":  "ctx_... | null",
+  "trace_id":   "trc_... | null",
+  "branch_key": "main",
+
+  "created_by": {
+    "agent_id":   "string",
+    "agent_name": "string",
+    "role":       "string",
+    "provider":   "anthropic | openai | google | mistral | local | custom",
+    "model":      "string"
+  },
+
+  "event": {
+    "type":        "string",
+    "to_agent_id": "string | null",
+    "timestamp":   "ISO 8601"
+  },
+
+  "payload": {
+    "input":     "string | object | null",
+    "output":    "string | object | null",
+    "memory":    "object | null",
+    "variables": "object | null"
+  },
+
+  "integrity": {
+    "payload_hash":        "sha256:hex",
+    "parent_hash":         "sha256:hex | null",
+    "integrity_hash":      "sha256:hex",
+    "verification_status": "valid | broken | unverified"
+  },
+
+  "lineage": {
+    "fork_of":      "ctx_... | null",
+    "fork_point":   "ctx_... | null",
+    "lineage_root": "ctx_... | null"
+  },
+
+  "created_at": "ISO 8601"
+}
+```
+
+### 3.2 Field definitions
+
+#### 3.2.1 Identity fields
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `id` | string | **Yes** | Globally unique context identifier. MUST follow the format `ctx_{unix_ms}_{6 random hex bytes}`. Example: `ctx_1774358291224_bad9b976`. |
+| `parent_id` | string \| null | No | The `id` of the previous context in the chain. MUST be null for root commits. When present, establishes a directed acyclic graph of contexts forming the execution lineage. |
+| `trace_id` | string \| null | No | Groups multiple commits into a single pipeline run. Recommended format: `trc_{hex}`. |
+| `branch_key` | string | **Yes** | Branch name for this context. MUST default to `"main"` when not specified. Used to distinguish fork branches from the main chain. |
+| `schema_version` | string | **Yes** | Version of the Context Passport specification. Current value: `"1.0"`. |
+
+#### 3.2.2 Agent attribution
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `created_by.agent_id` | string | **Yes** | Unique identifier of the agent that produced this context. |
+| `created_by.agent_name` | string | **Yes** | Human-readable name for the agent. |
+| `created_by.role` | string | No | Semantic role. Recommended values: `researcher`, `writer`, `reviewer`, `critic`, `planner`, `executor`, `validator`. Custom values are permitted. |
+| `created_by.provider` | string | No | LLM provider. Recommended values: `anthropic`, `openai`, `google`, `mistral`, `local`, `custom`. |
+| `created_by.model` | string | No | Specific model name or version string. |
+
+#### 3.2.3 Event
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `event.type` | string | **Yes** | The type of event this passport records. See section 3.3. |
+| `event.to_agent_id` | string \| null | No | The `agent_id` of the intended recipient. MUST be null for events with no specific recipient (checkpoint, audit). |
+| `event.timestamp` | ISO 8601 | **Yes** | The time at which the event occurred, in ISO 8601 format with timezone. |
+
+#### 3.2.4 Payload
+
+All payload fields are optional. Implementations SHOULD use structured JSON objects rather than plain strings wherever possible, as this preserves schema information across the chain.
+
+| Field | Type | Description |
+|---|---|---|
+| `payload.input` | string \| object \| null | What this agent received as input. |
+| `payload.output` | string \| object \| null | What this agent produced. Prefer structured JSON. |
+| `payload.memory` | object \| null | Persistent state, runtime parameters, tool results, or configuration. |
+| `payload.variables` | object \| null | Named values intended for consumption by downstream agents. |
+
+#### 3.2.5 Integrity
+
+The integrity block MUST be computed by the implementation at commit time. Clients MUST NOT set these fields manually.
+
+| Field | Description |
+|---|---|
+| `payload_hash` | SHA-256 of the canonicalized payload. See section 3.4. Formatted as `sha256:{hex}`. |
+| `parent_hash` | The `integrity_hash` of the parent commit. Null for root commits. Formatted as `sha256:{hex}` or null. |
+| `integrity_hash` | SHA-256 of the concatenation of `payload_hash` and `parent_hash`. See section 3.4. |
+| `verification_status` | `valid` if the chain is intact to this point. `broken` if a hash mismatch is detected. `unverified` if verification has not been performed. |
+
+#### 3.2.6 Lineage
+
+Populated automatically by implementations on fork operations.
+
+| Field | Description |
+|---|---|
+| `lineage.fork_of` | The `id` of the context that was forked from. |
+| `lineage.fork_point` | The `id` of the checkpoint where the fork began. |
+| `lineage.lineage_root` | The `id` of the root context of the original chain. |
+
+### 3.3 Event types
+
+#### Developer events
+`commit` `fork` `checkpoint` `revert` `branch` `merge` `spawn` `retry` `timeout` `error`
+
+#### Compliance events
+`override` `consent` `escalate` `redact` `audit`
+
+Custom event types are permitted. Implementations SHOULD prefix custom types with a namespace: `myorg.custom_type`.
+
+### 3.4 Integrity computation
+
+Implementations MUST compute the integrity block as follows:
+
+```
+canonical_payload = JSON.stringify(payload, Object.keys(payload).sort())
+payload_hash      = "sha256:" + hex(sha256(canonical_payload))
+
+if parent exists:
+  parent_hash    = parent.integrity.integrity_hash
+  chain_input    = payload_hash + parent_hash
+else:
+  parent_hash    = null
+  chain_input    = payload_hash + "root"
+
+integrity_hash   = "sha256:" + hex(sha256(chain_input))
+```
+
+**Canonicalization** means serializing the payload object with keys sorted alphabetically at every level, producing a deterministic byte sequence for any given payload value. This ensures the same payload always produces the same hash regardless of key insertion order.
+
+**Verification** of a chain requires only the sequence of passports. For each passport after the root:
+1. Recompute `payload_hash` from the stored payload.
+2. Fetch the parent passport's `integrity_hash`.
+3. Recompute `integrity_hash` from `payload_hash + parent_integrity_hash`.
+4. Compare with the stored `integrity_hash`.
+
+If any comparison fails, the chain is `broken` at that point.
+
+---
+
+## 4. Conformance
+
+An implementation is **Context Passport v1.0 conformant** if it:
+
+1. Produces passports that validate against the JSON Schema at `schema/v1.json`.
+2. Correctly computes the integrity block as defined in section 3.4.
+3. Correctly links parent commits via `parent_id`.
+4. Correctly verifies chains by recomputing hashes.
+5. Sets `schema_version: "1.0"` on all produced passports.
+
+Conformant implementations are encouraged to list themselves in the implementations registry at `github.com/bengunvl/context-passport/IMPLEMENTATIONS.md`.
+
+---
+
+## 5. Security considerations
+
+### 5.1 Tamper evidence vs tamper prevention
+
+Context Passport provides tamper **evidence**, not tamper **prevention**. The hash chain makes modification detectable after the fact — it does not prevent modification. For stronger guarantees, implement at the storage layer (immutable append-only storage, WORM drives, or cryptographic timestamping services).
+
+### 5.2 Payload confidentiality
+
+Context Passport does not encrypt payloads. Implementations that need payload confidentiality SHOULD encrypt the payload before committing and decrypt after retrieval, using a key held by the client (BYOK pattern). The integrity hash is computed over the ciphertext in this case.
+
+### 5.3 Agent identity
+
+The `created_by.agent_id` field is self-reported by the committing agent. It is not cryptographically verified by the schema. Implementations that require verified agent identity SHOULD use W3C Decentralized Identifiers (DIDs) in the `created_by.agent_id` field and verify the DID document at verification time.
+
+---
+
+## 6. IANA considerations
+
+This specification does not require any IANA actions.
+
+---
+
+## 7. References
+
+- JSON: ECMA-262, ECMA-404
+- SHA-256: NIST FIPS 180-4
+- ISO 8601: Date and time format
+- W3C DID: Decentralized Identifiers v1.0
+- CC0 1.0: Creative Commons Zero
+
+---
+
+## Appendix A: Minimal implementation (Python)
+
+```python
+import json, hashlib, time, secrets
+
+def make_passport(agent_id, agent_name, payload, parent=None,
+                  to_agent_id=None, role=None, provider=None, model=None,
+                  event_type="commit", trace_id=None, branch_key="main"):
+
+    ts    = str(int(time.time() * 1000))
+    hex_  = secrets.token_hex(6)
+    ctx_id = f"ctx_{ts}_{hex_}"
+
+    canonical  = json.dumps(payload, sort_keys=True, separators=(',', ':'))
+    pay_hash   = "sha256:" + hashlib.sha256(canonical.encode()).hexdigest()
+
+    if parent:
+        parent_hash = parent["integrity"]["integrity_hash"]
+        chain_input = pay_hash + parent_hash
+        parent_id   = parent["id"]
+    else:
+        parent_hash = None
+        chain_input = pay_hash + "root"
+        parent_id   = None
+
+    int_hash = "sha256:" + hashlib.sha256(chain_input.encode()).hexdigest()
+
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc).isoformat()
+
+    return {
+        "$schema":        "https://contextpassport.com/schema/v1.json",
+        "schema_version": "1.0",
+        "id":             ctx_id,
+        "parent_id":      parent_id,
+        "trace_id":       trace_id,
+        "branch_key":     branch_key,
+        "created_by": {
+            "agent_id":   agent_id,
+            "agent_name": agent_name,
+            "role":       role,
+            "provider":   provider,
+            "model":      model,
+        },
+        "event": {
+            "type":        event_type,
+            "to_agent_id": to_agent_id,
+            "timestamp":   now,
+        },
+        "payload": payload,
+        "integrity": {
+            "payload_hash":        pay_hash,
+            "parent_hash":         parent_hash,
+            "integrity_hash":      int_hash,
+            "verification_status": "valid",
+        },
+        "lineage": {
+            "fork_of":      None,
+            "fork_point":   None,
+            "lineage_root": None,
+        },
+        "created_at": now,
+    }
+
+def verify_chain(passports):
+    """Returns True if chain is intact, False if any hash mismatch detected."""
+    prev = None
+    for p in passports:
+        canonical  = json.dumps(p["payload"], sort_keys=True, separators=(',', ':'))
+        pay_hash   = "sha256:" + hashlib.sha256(canonical.encode()).hexdigest()
+        parent_hash = prev["integrity"]["integrity_hash"] if prev else None
+        chain_input = pay_hash + (parent_hash or "root")
+        expected    = "sha256:" + hashlib.sha256(chain_input.encode()).hexdigest()
+        if p["integrity"]["integrity_hash"] != expected:
+            return False
+        prev = p
+    return True
+```
+
+---
+
+## Appendix B: JSON Schema (v1.0)
+
+The machine-readable JSON Schema is at `schema/v1.json` in this repository.
+
+---
+
+*Context Passport Specification v1.0-draft. Released under CC0 1.0. Maintained by DarkMatter (darkmatterhub.ai). Contributions welcome via GitHub.*
