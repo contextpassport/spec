@@ -2,6 +2,9 @@
   "name": "context-passport",
   "version": "1.0.0",
   "scripts": {
-    "start": "python3 -m http.server ${PORT:-3000}"
+    "start": "npx serve . --listen ${PORT:-3000} --no-clipboard"
+  },
+  "dependencies": {
+    "serve": "^14.0.0"
   }
 }
