@@ -1,0 +1,20 @@
+# Context Passport — Code Owners
+#
+# This file defines who is automatically requested for review on pull requests.
+# As maintainers are added per GOVERNANCE.md, append them to the relevant lines.
+#
+# Syntax: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-configuration/customizing-your-repository/about-code-owners
+
+# Default — all files require review by current stewards
+* @bengunvl
+
+# Specification content — high bar, requires review from spec maintainers
+/SPEC.md            @bengunvl
+/schema/            @bengunvl
+/v1.json            @bengunvl
+/EXTENSIONS.md      @bengunvl
+
+# Governance documents — require review from project leads only
+/GOVERNANCE.md      @bengunvl
+/CODE_OF_CONDUCT.md @bengunvl
+/SECURITY.md        @bengunvl
