@@ -1,14 +1,14 @@
 # Context Passport
 
-**An open standard for AI agent context handoffs.**
+**The envelope format for AI agent events.**
 
-Version 1.0 · Draft · CC0 1.0
+Version 1.0 · Draft · Spec: CC0 1.0 · Reference implementations: Apache-2.0
 
 ---
 
-Context Passport is a minimal JSON schema for structured, verifiable context handoffs between AI agents. Model-agnostic. Framework-agnostic. Cryptographically verifiable.
+Context Passport is a minimal JSON schema for structured, verifiable records of AI agent events — decisions, handoffs, checkpoints, forks, audits, and consent. Model-agnostic. Framework-agnostic. Cryptographically verifiable.
 
-The goal: become the TCP of multi-agent systems — a standard envelope format that any agent can produce and any agent can consume, with built-in integrity verification that does not require trusting any central authority.
+The goal: become the standard envelope format for AI agent events — a record any agent can produce and any party can verify, with built-in integrity guarantees that do not require trusting any central authority.
 
 ## Quick look
 
@@ -51,9 +51,9 @@ The goal: become the TCP of multi-agent systems — a standard envelope format t
 
 | Implementation | Type | License | Link |
 |---|---|---|---|
-| DarkMatter | Reference | MIT | darkmatterhub.ai |
+| DarkMatter | Reference | Apache-2.0 | darkmatterhub.ai |
 
-Building an implementation? Open a PR to add it to this list.
+Building an implementation? Open a PR to add it to this list. Conformance test suite at `github.com/contextpassport/conformance-tests`.
 
 ## Status
 
@@ -63,6 +63,8 @@ Feedback welcome via GitHub Issues.
 
 ## License
 
-CC0 1.0 Universal — no rights reserved. The specification is public domain. Implement it, fork it, extend it — no attribution required.
+The **specification** (SPEC.md, schema/, README.md content) is released under **CC0 1.0 Universal** — no rights reserved, public domain. Implement it, fork it, extend it. No attribution required.
 
-The reference implementation (DarkMatter) is separately licensed under MIT.
+The **reference implementations** (server.js, test.js, language-specific SDKs) are released under **Apache-2.0** — includes an explicit patent grant.
+
+See `LICENSE` (CC0) and `LICENSE-APACHE` (Apache-2.0).

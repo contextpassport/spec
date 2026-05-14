@@ -2,17 +2,20 @@
 
 **Version:** 1.0-draft  
 **Status:** Draft  
-**License:** CC0 1.0 Universal (public domain)  
+**Specification license:** CC0 1.0 Universal (public domain)  
+**Reference implementation license:** Apache-2.0 (with explicit patent grant)  
 **Maintained by:** DarkMatter (darkmatterhub.ai)  
-**Repository:** github.com/bengunvl/context-passport
+**Repository:** github.com/contextpassport/spec
 
 ---
 
 ## Abstract
 
-Context Passport is an open standard for structured, verifiable context handoffs between AI agents. It defines a minimal JSON envelope that any agent, framework, or model can produce and consume — making multi-agent context handoffs interoperable, cryptographically verifiable, and auditable across systems.
+Context Passport is an open standard for structured, verifiable records of AI agent events. It defines a minimal JSON envelope that any agent, framework, or model can produce and consume — making agent decisions, handoffs, checkpoints, and audits interoperable, cryptographically verifiable, and auditable across systems.
 
-The goal of this specification is to become the standard interchange format for AI agent context across the AI ecosystem.
+Event types covered by this specification include developer events (commit, fork, checkpoint, spawn, retry, error) and compliance events (override, consent, escalate, redact, audit). Handoffs are one event type among many.
+
+The goal of this specification is to become the standard interchange format for AI agent event records across the AI ecosystem.
 
 ---
 
@@ -54,7 +57,11 @@ The SHA-256 hash chain enables any party holding a sequence of passports to veri
 
 ### 2.5 Open governance
 
-This specification is released under CC0 1.0 — no copyright, no restrictions. Any person or organization may implement, extend, or fork it without restriction or attribution requirement. The standard belongs to the community.
+This specification is released under CC0 1.0 — no copyright, no restrictions. Reference implementations published by the maintainers are released under Apache-2.0, which includes an explicit patent grant. Any person or organization may implement, extend, or fork the specification without restriction or attribution requirement. The standard belongs to the community.
+
+### 2.6 Forward-compatible by extension
+
+The specification grows by addition, never by breaking change within a major version. New event types, custom fields, and vendor-specific extensions MUST be namespaced (e.g. `myorg.custom_type`, `myorg.field_name`). Implementations MUST ignore unknown namespaced fields without error. A formal extension registry lives at `EXTENSIONS.md` in the repository. Anyone may submit an extension via pull request; widely-adopted extensions are candidates for promotion to the core spec in subsequent major versions.
 
 ---
 
@@ -106,6 +113,13 @@ A Context Passport is a JSON object with the following structure. Fields marked 
     "fork_of":      "ctx_... | null",
     "fork_point":   "ctx_... | null",
     "lineage_root": "ctx_... | null"
+  },
+
+  "signature": {
+    "algorithm":    "ed25519",
+    "key_id":       "string",
+    "public_key":   "base64",
+    "signature":    "base64"
   },
 
   "created_at": "ISO 8601"
@@ -174,6 +188,19 @@ Populated automatically by implementations on fork operations.
 | `lineage.fork_point` | The `id` of the checkpoint where the fork began. |
 | `lineage.lineage_root` | The `id` of the root context of the original chain. |
 
+#### 3.2.7 Signature (optional)
+
+The signature block is optional in v1.0 but RECOMMENDED for any implementation that requires non-repudiation. When present, the signature MUST be computed over the canonical bytes of the envelope with the `signature.signature` field cleared.
+
+| Field | Description |
+|---|---|
+| `signature.algorithm` | Signature algorithm. RECOMMENDED: `ed25519`. Other values: `ecdsa-p256`, `rsa-pss-sha256`. |
+| `signature.key_id` | Key identifier used to sign. Implementations SHOULD use stable, rotation-aware identifiers. |
+| `signature.public_key` | Base64-encoded public key, or a reference (DID, URL) that resolves to the public key. |
+| `signature.signature` | Base64-encoded signature bytes over the canonical envelope. |
+
+Implementations that omit the signature block produce passports with tamper evidence (via the integrity hash chain) but without non-repudiation. Implementations that include the signature block produce passports where authorship can be proven to any third party holding the public key.
+
 ### 3.3 Event types
 
 #### Developer events
@@ -224,7 +251,7 @@ An implementation is **Context Passport v1.0 conformant** if it:
 4. Correctly verifies chains by recomputing hashes.
 5. Sets `schema_version: "1.0"` on all produced passports.
 
-Conformant implementations are encouraged to list themselves in the implementations registry at `github.com/bengunvl/context-passport/IMPLEMENTATIONS.md`.
+Conformant implementations are encouraged to list themselves in the implementations registry at `github.com/contextpassport/spec/IMPLEMENTATIONS.md`. A conformance test suite is published at `github.com/contextpassport/conformance-tests`. An implementation may declare itself conformant only after passing all required test vectors.
 
 ---
 
@@ -347,4 +374,4 @@ The machine-readable JSON Schema is at `schema/v1.json` in this repository.
 
 ---
 
-*Context Passport Specification v1.0-draft. Released under CC0 1.0. Maintained by DarkMatter (darkmatterhub.ai). Contributions welcome via GitHub.*
+*Context Passport Specification v1.0-draft. Specification released under CC0 1.0. Reference implementations released under Apache-2.0. Maintained by DarkMatter (darkmatterhub.ai). Contributions welcome via GitHub.*

@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://contextpassport.com/schema/v1.json",
   "title": "Context Passport v1.0",
-  "description": "Open standard for structured, verifiable context handoffs between AI agents.",
+  "description": "Open standard for structured, verifiable records of AI agent events.",
   "type": "object",
   "required": ["schema_version", "id", "branch_key", "created_by", "event", "integrity", "created_at"],
   "properties": {
@@ -98,6 +98,17 @@
         "fork_of":      { "type": ["string", "null"] },
         "fork_point":   { "type": ["string", "null"] },
         "lineage_root": { "type": ["string", "null"] }
+      }
+    },
+    "signature": {
+      "type": "object",
+      "description": "Optional. Provides non-repudiation when present. See SPEC.md section 3.2.7.",
+      "required": ["algorithm", "key_id", "signature"],
+      "properties": {
+        "algorithm":  { "type": "string", "examples": ["ed25519", "ecdsa-p256", "rsa-pss-sha256"] },
+        "key_id":     { "type": "string" },
+        "public_key": { "type": ["string", "null"], "description": "Base64-encoded public key or a reference (DID, URL)." },
+        "signature":  { "type": "string", "description": "Base64-encoded signature over the canonical envelope with signature.signature cleared." }
       }
     },
     "created_at": { "type": "string", "format": "date-time" }
