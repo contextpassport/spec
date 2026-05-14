@@ -68,4 +68,3 @@ The **specification** (SPEC.md, schema/, README.md content) is released under **
 The **reference implementations** (server.js, test.js, language-specific SDKs) are released under **Apache-2.0** — includes an explicit patent grant.
 
 See `LICENSE` (CC0) and `LICENSE-APACHE` (Apache-2.0).
-<-----END PUBLIC deploy test -->
