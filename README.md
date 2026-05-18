@@ -75,6 +75,17 @@ Draft v1.0. The schema is stable enough to build against. We are collecting feed
 
 Feedback welcome via GitHub Issues.
 
+## Get involved
+
+Context Passport is a community-governed open standard. We are actively looking for additional contributors and maintainers.
+
+- **Open an issue or a PR.** Editorial fixes, new examples, RFC proposals, extensions — all welcome. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
+- **Become a maintainer.** A standard with one maintainer is, in practice, a vendor schema. Becoming a maintainer is documented in [`CONTRIBUTING.md` §5](CONTRIBUTING.md#5-becoming-a-maintainer). We are explicitly looking for maintainers from underrepresented language ecosystems, regulated industries, and non-US/EU regulatory contexts.
+- **Build a reference implementation.** A new language port (Rust, Go, Java, Ruby) or framework integration (LangChain, LlamaIndex, CrewAI) is one of the most impactful contributions possible right now. See the [`contextpassport` organization](https://github.com/contextpassport).
+- **Discuss.** General questions: [GitHub Discussions](https://github.com/contextpassport/spec/discussions). Direct contact: `maintainers@contextpassport.com`.
+
+Governance and decision-making are documented in [`GOVERNANCE.md`](GOVERNANCE.md). Code of conduct in [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). Security reports to `security@contextpassport.com` ([`SECURITY.md`](SECURITY.md)).
+
 ## License
 
 The **specification** (SPEC.md, schema/, README.md content) is released under **CC0 1.0 Universal** — no rights reserved, public domain. Implement it, fork it, extend it. No attribution required.
