@@ -19,6 +19,27 @@ The goal of this specification is to become the standard interchange format for 
 
 ---
 
+## Table of contents
+
+1. [Motivation](#1-motivation)
+2. [Design Principles](#2-design-principles)
+3. [Specification](#3-specification)
+   - [Schema](#31-schema)
+   - [Field definitions](#32-field-definitions)
+      - [Identity fields](#321-identity-fields)
+      - [Agent attribution](#322-agent-attribution)
+      - [Event](#323-event)
+      - [Payload](#324-payload)
+      - [Integrity](#325-integrity)
+      - [Lineage](#326-lineage)
+      - [Signature (optional)](#327-signature-optional)
+   - [Event types](#33-event-types)
+   - [Integrity computation](#34-integrity-computation)
+4. [Conformance](#4-conformance)
+5. [Security considerations](#5-security-considerations)
+6. [IANA considerations](#6-iana-considerations)
+7. [References](#7-references)
+
 ## 1. Motivation
 
 Multi-agent AI systems are becoming production infrastructure. As of 2025, teams routinely chain multiple AI agents together — researcher, writer, reviewer, validator — across different models, frameworks, and organizational boundaries.
