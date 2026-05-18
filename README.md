@@ -44,7 +44,13 @@ The goal: become the standard envelope format for AI agent events — a record a
 
 - [`SPEC.md`](SPEC.md) — full specification
 - [`schema/v1.json`](schema/v1.json) — machine-readable JSON Schema
+- [`docs/`](docs/) — non-normative design notes for implementers
+  - [`throughput-and-trust.md`](docs/throughput-and-trust.md) — submission patterns, trust properties, SDK guidance
+- [`proposals/`](proposals/) — draft proposals
+  - [`context-passport-for-mcp.md`](proposals/context-passport-for-mcp.md) — MCP extension proposal
+- [`EXTENSIONS.md`](EXTENSIONS.md) — vendor-namespaced extension registry
 - [`IMPLEMENTATIONS.md`](IMPLEMENTATIONS.md) — known implementations
+- [`GOVERNANCE.md`](GOVERNANCE.md) — how this specification evolves
 - [`examples/`](examples/) — example passports and chains
 
 ## Implementations

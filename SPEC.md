@@ -269,6 +269,24 @@ Context Passport does not encrypt payloads. Implementations that need payload co
 
 The `created_by.agent_id` field is self-reported by the committing agent. It is not cryptographically verified by the schema. Implementations that require verified agent identity SHOULD use W3C Decentralized Identifiers (DIDs) in the `created_by.agent_id` field and verify the DID document at verification time.
 
+### 5.4 Completeness vs. integrity
+
+This specification provides guarantees about the **integrity** of records that are created — they cannot be modified, reordered, or backdated without detection. It does not and cannot guarantee **completeness** — that every event the agent should have recorded was in fact recorded. A client who controls record creation can omit records they choose not to create, and no cryptographic system can reveal the omission.
+
+Implementations and integrators that require completeness guarantees (e.g., regulated audit trails) MUST combine Context Passport with one or more of:
+
+- **Continuity expectations** established by contract, regulation, or SLA, so that gaps are auditable through non-cryptographic means.
+- **Counterparty reconciliation** with records from a second party to the same event (see `proposals/context-passport-for-mcp.md` for the MCP server/client pattern).
+- **External anchoring at creation time** (e.g., OpenTimestamps) so that the existence of a record is provable independent of whether it later reaches a particular receiving server.
+
+See `docs/throughput-and-trust.md` for a full discussion of submission patterns, trust properties, and defenses.
+
+### 5.5 Submission timing and trust
+
+A passport has three timing moments worth distinguishing — creation time, server-receipt time, and witness-inclusion time. Client-side batching, asynchronous submission, and offline operation widen the gap between these timestamps without affecting the integrity of the records themselves, provided records are signed at creation time. Implementations choosing to batch SHOULD also sign at creation time so the trust properties of the batched workflow match those of synchronous submission.
+
+See `docs/throughput-and-trust.md` for the full taxonomy and recommended SDK patterns.
+
 ---
 
 ## 6. IANA considerations
