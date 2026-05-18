@@ -79,9 +79,9 @@ The goal in `GOVERNANCE.md` is to have at least three independent maintainers fr
 
 If you want to contribute but don't have a specific change in mind, look at GitHub issues labeled:
 
-- `good-first-issue` — small, well-scoped, suitable for first-time contributors
-- `help-wanted` — clear scope, larger scope, looking for someone to pick up
-- `docs` — improvements to specification text, examples, or design notes
+- [`good first issue`](https://github.com/contextpassport/spec/labels/good%20first%20issue) — small, well-scoped, suitable for first-time contributors
+- [`help wanted`](https://github.com/contextpassport/spec/labels/help%20wanted) — clear scope, larger scope, looking for someone to pick up
+- [`documentation`](https://github.com/contextpassport/spec/labels/documentation) — improvements to specification text, examples, or design notes
 
 Don't see what you want? Open a discussion describing what you'd like to work on, and a maintainer will help shape it into a tractable issue.
 
