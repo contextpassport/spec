@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The case for open audit standards for AI agents — Context Passport</title>
+<meta name="description" content="AI agents are taking real actions with real consequences. The way we record those actions today does not survive contact with a regulator, an auditor, or a serious counterparty. Here is what an open audit standard for AI agents needs to be, and why it cannot come from a single vendor." />
+<meta property="og:title" content="The case for open audit standards for AI agents" />
+<meta property="og:description" content="AI agents are taking real actions with real consequences. The way we record those actions today does not survive contact with a regulator, an auditor, or a serious counterparty." />
+<meta property="og:type" content="article" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;0,9..144,900;1,9..144,300;1,9..144,400;1,9..144,500;1,9..144,600;1,9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #faf8f3;
+    --paper-deep: #f3eee2;
+    --ink: #1a1814;
+    --ink-soft: #4a443a;
+    --ink-muted: #7d7568;
+    --seal: #8B3A1F;
+    --seal-deep: #6b2a13;
+    --foil: #a08654;
+    --gold: #b89968;
+    --verified: #2d6a4f;
+    --border: rgba(26, 24, 20, 0.12);
+    --shadow-stamp: 0 1px 2px rgba(26,24,20,0.05), 0 4px 12px rgba(26,24,20,0.04);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--paper); color: var(--ink); }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  .font-display { font-family: 'Fraunces', Georgia, serif; }
+  .font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .ink { color: var(--ink); }
+  .ink-soft { color: var(--ink-soft); }
+  .ink-muted { color: var(--ink-muted); }
+  .foil { color: var(--foil); }
+  .seal { color: var(--seal); }
+  a { color: inherit; text-decoration: none; }
+  a:hover { color: var(--seal); }
+  .label-mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+
+  /* Layout */
+  .nav {
+    border-bottom: 1px solid var(--border);
+    background: var(--paper);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .nav-inner {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .wordmark {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 500;
+    font-size: 22px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .wordmark span { font-style: italic; color: var(--seal); }
+  .nav-links {
+    display: flex;
+    gap: 32px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .nav-links a { color: var(--ink-soft); }
+  .nav-links a:hover { color: var(--seal); }
+
+  /* Article */
+  article {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 80px 24px 120px;
+  }
+  @media (min-width: 768px) { article { padding: 120px 24px 160px; } }
+
+  .article-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .article-eyebrow .rule {
+    height: 1px;
+    width: 32px;
+    background: var(--seal);
+  }
+  .article-eyebrow span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--seal);
+  }
+
+  h1 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 400;
+    font-size: 44px;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 24px;
+    text-wrap: balance;
+  }
+  @media (min-width: 768px) { h1 { font-size: 60px; } }
+  h1 em { font-style: italic; color: var(--foil); font-weight: 400; }
+
+  .article-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    color: var(--ink-muted);
+    margin-bottom: 56px;
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .article-meta .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+
+  .lede {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 22px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    margin-bottom: 48px;
+    font-weight: 400;
+    text-wrap: pretty;
+  }
+  @media (min-width: 768px) { .lede { font-size: 24px; } }
+
+  article h2 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 500;
+    font-size: 28px;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin-top: 64px;
+    margin-bottom: 20px;
+    text-wrap: balance;
+  }
+  @media (min-width: 768px) { article h2 { font-size: 32px; } }
+
+  article h3 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 500;
+    font-size: 20px;
+    line-height: 1.3;
+    color: var(--ink);
+    margin-top: 36px;
+    margin-bottom: 14px;
+  }
+
+  article p {
+    font-size: 17px;
+    line-height: 1.7;
+    color: var(--ink-soft);
+    margin-bottom: 22px;
+    text-wrap: pretty;
+  }
+
+  article p strong { color: var(--ink); font-weight: 600; }
+  article em { font-style: italic; }
+
+  article a { color: var(--seal); border-bottom: 1px solid rgba(139, 58, 31, 0.3); }
+  article a:hover { border-bottom-color: var(--seal); }
+
+  blockquote {
+    border-left: 2px solid var(--seal);
+    padding: 6px 0 6px 24px;
+    margin: 32px 0;
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 20px;
+    font-style: italic;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+
+  ul, ol {
+    margin: 0 0 22px 24px;
+    color: var(--ink-soft);
+  }
+  ul li, ol li {
+    font-size: 17px;
+    line-height: 1.7;
+    margin-bottom: 8px;
+  }
+  ul li strong, ol li strong { color: var(--ink); font-weight: 600; }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14.5px;
+    background: var(--paper-deep);
+    border: 1px solid var(--border);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--ink);
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 56px 0;
+  }
+
+  /* CTA at the end */
+  .article-cta {
+    margin-top: 80px;
+    padding: 40px;
+    background: var(--paper-deep);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  .article-cta h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+  }
+  .article-cta p {
+    font-size: 16px;
+    margin-bottom: 20px;
+  }
+  .article-cta-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .article-cta-actions a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border: 1px solid var(--ink);
+    border-radius: 3px;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--ink);
+  }
+  .article-cta-actions a.ghost {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--border);
+  }
+  .article-cta-actions a:hover {
+    background: var(--seal);
+    color: var(--paper);
+    border-color: var(--seal);
+  }
+
+  /* Footer */
+  footer {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 48px 0;
+    margin-top: 0;
+  }
+  footer .inner {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(250, 248, 243, 0.5);
+  }
+  footer a { color: rgba(250, 248, 243, 0.7); }
+  footer a:hover { color: var(--foil); }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a href="/" class="wordmark">Context <span>Passport</span></a>
+    <nav class="nav-links">
+      <a href="/#schema">Spec</a>
+      <a href="/#implementations">Implementations</a>
+      <a href="/blog/">Blog</a>
+      <a href="https://github.com/contextpassport/spec" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<article>
+
+<div class="article-eyebrow">
+  <span class="rule"></span>
+  <span>Essay</span>
+</div>
+
+<h1>The case for open audit standards for <em>AI agents</em></h1>
+
+<div class="article-meta">
+  <span>2,100 words</span>
+  <span class="pill"><span>•</span> Spec</span>
+  <span class="pill"><span>•</span> Policy</span>
+</div>
+
+<p class="lede">AI agents are taking real actions with real consequences. The way we record those actions today does not survive contact with a regulator, an auditor, or a serious counterparty. Here is what an open audit standard for AI agents needs to be — and why it cannot come from a single vendor.</p>
+
+<hr>
+
+<p>Picture a scene that is becoming routine in 2026. An AI agent at a regional bank approves a wire transfer. The transfer turns out to be fraudulent. A customer loses money. A regulator calls.</p>
+
+<p>"Show us exactly what the agent saw, what it decided, and what evidence supports that decision."</p>
+
+<p>The bank produces a log entry from its application database. It shows the agent's recommendation and a timestamp. The regulator asks how they can be sure the log entry has not been modified since the incident. The answer, honestly, is that they cannot. The log lives inside the same system that produced the bad outcome. The system administrators can write to it. The fraud could have been concealed by the same hands that managed the system. The log is the bank's word about what happened. It is not evidence in any meaningful sense.</p>
+
+<p>This is not a hypothetical from a regulator's wishlist. This is the structural problem with how AI agents are being audited today, across finance, healthcare, insurance, legal services, and any domain where automated decisions touch consequential outcomes. The audit log is inside the system being audited. The auditor is being asked to trust the auditee.</p>
+
+<h2>What "audit log" actually means now</h2>
+
+<p>For decades, this self-report problem was tolerable because the systems being audited were slow, expensive to build, and operated by small numbers of trained professionals. The bank's IT department logged transactions. The auditor did sampling. The mismatch between log-credibility and audit-needs was managed through process: independent auditors, four-eyes principles, periodic external reviews.</p>
+
+<p>AI agents break this equilibrium in two ways.</p>
+
+<p>First, the volume. An AI agent can make thousands of consequential decisions per day, each one a potential audit target. Process-based controls do not scale to that volume. The auditor cannot sample 1% of an agent's decisions; they need the records themselves to be trustworthy.</p>
+
+<p>Second, the opacity. An agent's decision is shaped by its inputs (the prompts, the context, the tool results) and by the model's internal computation. When something goes wrong, the regulator does not just want to know <em>what</em> the agent decided. They want to know <em>why</em>, in terms specific enough to assign responsibility. A log entry that says <code>agent_id=A1 result=approve</code> does not answer that question. A log entry that includes the full input context, the model's actual response, the agent's reasoning trace, and a cryptographic chain to every preceding decision — that does.</p>
+
+<p>So the modern audit-trail problem for AI agents has two requirements that traditional logs do not satisfy:</p>
+
+<ol>
+<li><strong>Richness.</strong> Enough detail that an outside party can reconstruct the decision.</li>
+<li><strong>Verifiability.</strong> Structural guarantees that the record was not modified after the fact, by anyone, including the operator.</li>
+</ol>
+
+<h2>The lesson from software supply chains</h2>
+
+<p>The same problem appeared a few years ago in a different domain: software supply chains. Companies were shipping software built from dozens of upstream open-source dependencies. When a dependency turned out to contain a vulnerability or, in some cases, a malicious backdoor, downstream consumers needed to know which version of the dependency they actually shipped. The companies' own build logs said one thing. The reality could be different. Nobody had a credible way to prove which artifact they were running and whether it had been tampered with between build and deployment.</p>
+
+<p>The response was Sigstore. A consortium of vendors and open-source projects built a transparency log for software artifacts. When you build a binary, you can sign it; the signature is published to an append-only public log; anyone downstream can verify that the binary they are running was indeed signed by the publisher and has not been substituted. The trust property was structural — anyone could verify, without trusting any single vendor.</p>
+
+<p>What is notable about Sigstore is not the cryptography. The cryptography is undergraduate-level. What is notable is the governance: it is an open standard, with multiple independent implementations, governed by a foundation (the OpenSSF and the CNCF), with no single vendor able to dictate terms. This is what made it credible enough to be adopted by Kubernetes, by major cloud providers, by GitHub and GitLab, by the entire SLSA framework.</p>
+
+<p>The same approach works for AI agent records — and is necessary, for the same reasons. Audit standards that are owned by one company are not standards. They are vendor products with a standards-like marketing layer. Buyers eventually figure this out.</p>
+
+<h2>What "verifiable" actually requires</h2>
+
+<p>A verifiable record for AI agent decisions needs three structural properties. None of them are exotic; all of them are missing from typical audit-log designs.</p>
+
+<p><strong>One: tamper-evident.</strong> The bytes of a record cannot be modified without detection. The standard mechanism is a hash chain — each record contains a cryptographic hash of the previous one, so altering any record breaks every record downstream from it. Any auditor can recompute the chain and detect a break. The operator cannot silently rewrite history.</p>
+
+<p><strong>Two: attributable.</strong> Each record is cryptographically tied to the agent that produced it. An Ed25519 signature, computed by the agent at the moment of creation, binds the record to a specific signing key. Forging a record would require the private key. The operator cannot fabricate records after the fact and claim they came from a particular agent.</p>
+
+<p><strong>Three: independently verifiable.</strong> A third party — an auditor, a regulator, a counterparty — can verify the chain and the signatures without trusting the operator, without calling any vendor's API, without internet access. The verifier is open source. The signing public key is in the record. The hash algorithm is specified. The validation procedure is reproducible.</p>
+
+<p>These three properties are not novel. Sigstore has them for software. Certificate Transparency has them for TLS certificates. Bitcoin has them for transactions. What is novel is applying them to the records that AI agents produce as they operate. The mathematics is well-understood. The work is the framing, the schema, the governance, and the patient task of getting the relevant ecosystem to adopt the same standard.</p>
+
+<h2>Why this is becoming urgent now</h2>
+
+<p>The EU AI Act's high-risk provisions become enforceable on August 2, 2026. Article 12 requires providers of high-risk AI systems to ensure their systems "technically allow for the automatic recording of events" with traceability sufficient for post-market monitoring and risk identification. The European Commission's interpretive guidance is clear that "traceability" is not just a claim — it is a structural property of the record.</p>
+
+<p>The United States is heading in the same direction by a different route. The Colorado AI Act takes effect in February 2026. Several state legislatures are advancing similar bills. The federal banking regulators have been clear that AI used in credit decisions is subject to the same auditability expectations as any other model. Healthcare regulators are extending HIPAA audit-control thinking to AI-mediated patient interactions.</p>
+
+<p>At the same time, the adoption curve for autonomous agents is accelerating. Claude for Legal launched this month. Manus is rolling out at enterprise scale. Anthropic's Computer Use, OpenAI's Operator, and a dozen orchestration frameworks (LangGraph, CrewAI, Bedrock Agents, Google ADK) are pushing agent autonomy into production environments that did not have it a year ago.</p>
+
+<p>The collision of these two curves is the moment we are in. Agents are doing more, in more consequential domains, just as regulators are establishing what "good" looks like for auditability. The audit infrastructure that the agent ecosystem is building right now will be the infrastructure regulators evaluate against. If that infrastructure is a series of incompatible, vendor-controlled audit products, the result will be litigation, fragmentation, and eventually a regulator-mandated standard that nobody in the industry had input on. If it is an open standard with multiple implementations, the conversation goes differently.</p>
+
+<h2>Why a single vendor cannot own this</h2>
+
+<p>A natural response to a market need is to build a product that addresses it and sell that product. There are at least three audit-trail products for AI agents on the market today. None of them will be the standard. Three reasons:</p>
+
+<p><strong>Incentive misalignment.</strong> A vendor's natural interest is in their product being the only one. A standard's natural interest is in being implemented by many. A vendor can write a specification, but a specification under a vendor's sole control is a contract of adhesion, not a standard. The downstream consumers — the LangChain maintainers, the MCP working group, the cloud platform teams — know this, and they do not build to vendor specifications. They wait for the consortium standard or they build their own.</p>
+
+<p><strong>Lock-in concern.</strong> A regulated buyer evaluating an audit-trail vendor asks: what happens if you go away? If the records are stored in a proprietary format that only this vendor can read, the answer is "we lose the records, or we are held hostage by your successor's pricing." Open standards eliminate this concern. The records are interpretable by anyone.</p>
+
+<p><strong>Trust transfer.</strong> A regulator who must trust someone is more comfortable trusting a consortium with multiple implementations and open governance than trusting a single vendor with a private specification. This is the same reason TLS is operated by the IETF and not by a CA company. Standards bodies are not perfect, but they are structurally more legitimate than vendors.</p>
+
+<p>What the agent ecosystem needs is an open standard for verifiable audit records. The question is what that standard should look like.</p>
+
+<h2>What an open standard for this needs to be</h2>
+
+<p>A working open standard for AI agent audit records has six structural properties:</p>
+
+<ol>
+<li><strong>A minimal envelope, not a full data model.</strong> The standard defines the metadata fields needed for interoperability and verification. The payload is open — agents put whatever they need inside. This is how JSON works (the structure is fixed; the contents are open) and how MCP works (the protocol shape is fixed; the tool payloads are open).</li>
+<li><strong>Public-domain or permissive license.</strong> CC0 for the specification itself. Apache-2.0 for reference implementations. No copyright drag.</li>
+<li><strong>Multiple independent implementations.</strong> One implementation is a project. Two are a pattern. Three or more in different languages, with passing conformance tests, are a standard.</li>
+<li><strong>A conformance test suite.</strong> Implementations claim conformance only after passing the same test vectors. Anyone — including a regulator — can verify the claim by running the suite.</li>
+<li><strong>Neutral governance.</strong> A governance document specifying how the spec evolves, how maintainers are added, how breaking changes are introduced. The standard belongs to the community, not to a particular project's contributors.</li>
+<li><strong>Extension mechanism.</strong> Vendors and customers will need to add fields the core spec does not have. A namespaced extension model lets them do so without forking the spec; popular extensions can be promoted to core in subsequent versions.</li>
+</ol>
+
+<p>Context Passport is what we built to fit this description. It exists at <a href="https://github.com/contextpassport/spec">github.com/contextpassport/spec</a>. The specification is CC0. The reference implementations are Apache-2.0. There is a conformance test suite. There is a governance document. There is an extension model. There are design notes covering key management, throughput tradeoffs, external anchoring, regulatory mapping, and threat modeling.</p>
+
+<p>None of this is the standards play. The standards play is the next year of adoption: LangGraph emitting Context Passports natively, MCP servers carrying Context Passport headers, framework maintainers citing the spec in their docs, regulators referencing it in their interpretive guidance, second and third implementations from independent groups.</p>
+
+<p>None of that is guaranteed. It depends on whether the work meets a real need in a clear enough way that the relevant communities adopt it. The same was true of Sigstore in 2020. The work was good but the outcome was uncertain. What made it work was that the people who built it kept showing up with a useful artifact, asking developers what they needed, and building it.</p>
+
+<h2>What you can do today</h2>
+
+<p>If you are building an AI agent — for a regulated use case, a high-stakes workflow, or just an internal tool that might one day need to be defensible — the cost of adopting a verifiable record format is low and the cost of not adopting it grows steadily over time.</p>
+
+<p>The fastest path is the <a href="https://github.com/contextpassport/verifiable-agent-template">verifiable-agent-template</a> repository — a working LangGraph agent that emits signed, hash-chained Context Passports for every decision. Clone it, install it, run it. Sixty seconds. The records the template produces are valid under the open spec, verifiable offline by any third party, and portable to any compliant receiving server.</p>
+
+<p>If you are a framework maintainer, a platform vendor, or an MCP server author — read the <a href="https://github.com/contextpassport/spec">specification</a>, evaluate the conformance tests, and consider what it would take to emit Context Passports natively from your project. The maintainers are responsive on the repo's issues and pull requests.</p>
+
+<p>If you are a regulator, an auditor, or a compliance officer — the <a href="https://github.com/contextpassport/spec/blob/main/docs/regulatory-mapping.md">regulatory mapping</a> document walks through how Context Passport's properties align with EU AI Act, FINRA, HIPAA, SOX, GDPR, PCI DSS, ISO 42001, and NIST AI RMF. The standard is not a turnkey compliance product — it is a technical component you can require in your evaluations.</p>
+
+<p>An open standard is not a product launch. It is a slow accretion of citations, integrations, and shared vocabulary. The work is steady, multi-year, and easier when more people are doing it.</p>
+
+<div class="article-cta">
+  <h3>Try it</h3>
+  <p>The fastest demonstration of what Context Passport gives you: clone the template, run an agent, verify the chain offline. Total time: about a minute.</p>
+  <div class="article-cta-actions">
+    <a href="https://github.com/contextpassport/verifiable-agent-template">Try the template →</a>
+    <a href="https://github.com/contextpassport/spec" class="ghost">Read the spec</a>
+  </div>
+</div>
+
+</article>
+
+<footer>
+  <div class="inner">
+    <span>Context Passport · v1.0 · Draft Specification</span>
+    <span>
+      <a href="/">Home</a>&nbsp;·&nbsp;
+      <a href="https://github.com/contextpassport/spec" target="_blank" rel="noopener">GitHub</a>&nbsp;·&nbsp;
+      <a href="/blog/">Blog</a>
+    </span>
+  </div>
+</footer>
+
+</body>
+</html>
