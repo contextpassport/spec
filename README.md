@@ -50,6 +50,8 @@ The goal: become the standard envelope format for AI agent events — a record a
   - [`key-management.md`](docs/key-management.md) — file-based, PKI/X.509, and DID-based signing key patterns
   - [`witness-log.md`](docs/witness-log.md) — operator architecture for publishing public, anchored checkpoint chains
   - [`migration-and-versioning.md`](docs/migration-and-versioning.md) — minor vs. major versions, cross-version compatibility, upgrade playbook
+  - [`regulatory-mapping.md`](docs/regulatory-mapping.md) — field-by-field mapping to EU AI Act, FINRA 17a-4, HIPAA, SOX, GDPR, PCI DSS, ISO/IEC 42001, NIST AI RMF
+  - [`threat-model.md`](docs/threat-model.md) — adversaries, defenses, defense-in-depth recommendations
 - [`proposals/`](proposals/) — draft proposals
   - [`context-passport-for-mcp.md`](proposals/context-passport-for-mcp.md) — MCP extension proposal
 - [`EXTENSIONS.md`](EXTENSIONS.md) — vendor-namespaced extension registry
