@@ -52,7 +52,7 @@ When the client SDK computes the integrity hash and (if applicable) the signatur
 
 ### 2.2 Server-receipt time
 
-When the receiving server (DarkMatter, a self-hosted implementation, an audit aggregator) acknowledges receipt. The server records its own timestamp.
+When the receiving server (a hosted Context Passport implementation, a self-hosted implementation, or an audit aggregator) acknowledges receipt. The server records its own timestamp.
 
 **Trust property:** Independently verifiable. The server's timestamp is a different party's claim, and the gap between client-claimed creation time and server-claimed receipt time is itself an audit signal.
 
@@ -215,7 +215,7 @@ This defeats *modification* and *reordering* (the chain linkage is signed), but 
 
 The client submits `payload_hash` (not the payload itself) to an external timestamping service — OpenTimestamps (Bitcoin), an RFC 3161 TSA, a public transparency log — at the moment of creation. The service returns a proof that the hash existed at a particular external time.
 
-This defeats *backdating*: even if the commit is uploaded to DarkMatter hours later, the OTS proof shows the hash existed at the earlier time. A backdated commit cannot have an OTS proof from before the time it was actually created.
+This defeats *backdating*: even if the commit is uploaded to the receiving server hours later, the OTS proof shows the hash existed at the earlier time. A backdated commit cannot have an OTS proof from before the time it was actually created.
 
 ### 5.3 Continuity expectations
 

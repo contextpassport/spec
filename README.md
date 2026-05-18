@@ -61,11 +61,13 @@ The goal: become the standard envelope format for AI agent events — a record a
 
 ## Implementations
 
-| Implementation | Type | License | Link |
-|---|---|---|---|
-| DarkMatter | Reference | Apache-2.0 | darkmatterhub.ai |
+Open-source reference implementations are maintained under the [`contextpassport` GitHub organization](https://github.com/contextpassport):
 
-Building an implementation? Open a PR to add it to this list. Conformance test suite at `github.com/contextpassport/conformance-tests`.
+- [`contextpassport/python`](https://github.com/contextpassport/python) — Python reference implementation
+- [`contextpassport/typescript`](https://github.com/contextpassport/typescript) — TypeScript reference implementation
+- [`contextpassport/conformance-tests`](https://github.com/contextpassport/conformance-tests) — conformance test suite
+
+Third-party implementations are listed in [`IMPLEMENTATIONS.md`](IMPLEMENTATIONS.md). Building an implementation? Open a PR to add yours.
 
 ## Status
 

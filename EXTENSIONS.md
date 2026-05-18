@@ -4,8 +4,8 @@ Extensions allow implementations to add new event types and new fields without m
 
 ## How extensions work
 
-1. Pick a namespace prefix unique to your organization. Examples: `darkmatter`, `acme`, `bankco`.
-2. Use that prefix on every custom event type or field name: `darkmatter.checkpoint_anchored`, `acme.payment_authorized`, `bankco.kyc_event`.
+1. Pick a namespace prefix unique to your organization. Examples: `acme`, `bankco`, `fintechco`.
+2. Use that prefix on every custom event type or field name: `acme.payment_authorized`, `bankco.kyc_event`, `fintechco.position_opened`.
 3. Implementations that do not recognize the namespace MUST ignore the field or event without error. This is required for forward compatibility.
 4. Register the extension in this file via pull request so other implementers can discover and reuse it.
 
@@ -24,8 +24,9 @@ Promotion to core means the namespace prefix is dropped and the extension become
 
 | Namespace | Type | Description | Maintainer | Status | Since |
 |---|---|---|---|---|---|
-| `darkmatter.checkpoint_anchored` | Event | Emitted when a chain segment is anchored to an external timestamping service (OpenTimestamps, GitHub commit, etc.) | DarkMatter | Draft | 2026 |
-| `darkmatter.witness_log_ref` | Field | Reference to the public Witness Log entry corresponding to this passport | DarkMatter | Draft | 2026 |
+| *(none registered yet)* | | | | | |
+
+Implementations using namespaced extensions are encouraged to register them here via pull request.
 
 ## Submitting an extension
 

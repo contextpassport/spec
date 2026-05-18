@@ -275,10 +275,10 @@ Implementers and operators who want to be notified early can:
 A hypothetical v1.1 adds:
 - New optional field `created_by.organization_id` (a stable org-level identifier)
 - New event-type value `delegate` (for hand-off events with explicit delegation semantics)
-- Promoted extension: `darkmatter.witness_log_ref` → core field `witness_log_ref`
+- Promoted extension: `acme.witness_log_ref` → core field `witness_log_ref`
 
 Existing v1.0 implementations:
-- Consume v1.1 passports correctly: missing `organization_id` is fine (optional); unknown event-type `delegate` is treated as an opaque string; the namespaced `darkmatter.witness_log_ref` is ignored (as it was in v1.0); the core `witness_log_ref` is ignored (unknown field).
+- Consume v1.1 passports correctly: missing `organization_id` is fine (optional); unknown event-type `delegate` is treated as an opaque string; the namespaced `acme.witness_log_ref` is ignored (as it was in v1.0); the core `witness_log_ref` is ignored (unknown field).
 - Do not need to upgrade.
 
 Existing v1.0 records:
@@ -288,7 +288,7 @@ Existing v1.0 records:
 Operators producing new records:
 - Upgrade SDK to v1.1.
 - Optionally start emitting `organization_id` and `witness_log_ref` core fields.
-- Optionally retire the namespaced `darkmatter.witness_log_ref` alias.
+- Optionally retire the namespaced `acme.witness_log_ref` alias.
 
 This is the smoothest possible transition. Most minor versions should look like this.
 

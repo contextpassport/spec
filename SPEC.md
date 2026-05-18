@@ -4,7 +4,7 @@
 **Status:** Draft  
 **Specification license:** CC0 1.0 Universal (public domain)  
 **Reference implementation license:** Apache-2.0 (with explicit patent grant)  
-**Maintained by:** DarkMatter (darkmatterhub.ai)  
+**Maintained by:** Context Passport maintainers
 **Repository:** github.com/contextpassport/spec
 
 ---
@@ -392,4 +392,4 @@ The machine-readable JSON Schema is at `schema/v1.json` in this repository.
 
 ---
 
-*Context Passport Specification v1.0-draft. Specification released under CC0 1.0. Reference implementations released under Apache-2.0. Maintained by DarkMatter (darkmatterhub.ai). Contributions welcome via GitHub.*
+*Context Passport Specification v1.0-draft. Specification released under CC0 1.0. Reference implementations released under Apache-2.0. Maintained by the Context Passport maintainers. Contributions welcome via GitHub.*

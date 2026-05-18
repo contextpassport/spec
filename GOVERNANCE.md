@@ -8,14 +8,13 @@ Context Passport is an open standard. Governance exists to make the evolution of
 
 ## Stewardship
 
-The specification is currently stewarded by DarkMatter (darkmatterhub.ai). Stewardship means: triage of issues and pull requests, scheduling of releases, and maintenance of the canonical repository. Stewardship does not confer ownership — the specification is released under CC0 and belongs to the community.
+The specification is currently stewarded by the Context Passport maintainers. Stewardship means: triage of issues and pull requests, scheduling of releases, and maintenance of the canonical repository. Stewardship does not confer ownership — the specification is released under CC0 and belongs to the community.
 
 ## Maintainers
 
 Maintainers have merge rights on the canonical repository.
 
-**Current maintainers:**
-- DarkMatter (initial steward)
+The current list of maintainers is published in the `.github/CODEOWNERS` file of the canonical repository.
 
 **Becoming a maintainer:** Maintainers are added by consensus of existing maintainers after sustained contribution (typically: three substantive merged pull requests over three months, plus participation in spec discussions). The goal is to grow to at least three independent maintainers from at least two organizations within twelve months of v1.0 final.
 

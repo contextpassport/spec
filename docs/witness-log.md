@@ -1,7 +1,7 @@
 # Witness Log
 
 **Status:** Non-normative design note
-**Audience:** Operators building Context Passport receiving servers (e.g. DarkMatter, self-hosted implementations)
+**Audience:** Operators building Context Passport receiving servers
 **Companion to:** [docs/throughput-and-trust.md](throughput-and-trust.md), [docs/external-anchoring.md](external-anchoring.md)
 
 ---
@@ -53,7 +53,7 @@ Storage requirements:
 - **Indexed for chain traversal.** Lookups by `id`, `parent_id`, `trace_id` should be O(log n) at minimum.
 - **Durable before ack.** The server MUST persist the passport before returning a receipt to the client. A receipt for a record not actually durable is a credibility hole.
 
-Reference: DarkMatter uses a Postgres `commits` table with `INSERT`-only RLS policies and a constraint trigger preventing column modification. The implementation is in `src/server.js`.
+Pattern: a Postgres `commits` table with `INSERT`-only row-level security policies and a constraint trigger preventing column modification is one well-tested implementation. Equivalent results can be achieved with object-storage-backed append-only logs, ledger databases like immudb, or any storage layer with hardware-enforced WORM semantics.
 
 ---
 
@@ -91,7 +91,7 @@ A Merkle tree over the batch lets a client request a compact proof that *their* 
 
 ### Why a separate `schema_version`?
 
-The checkpoint envelope is a different schema from the Context Passport itself. Mixing them creates ambiguity. The DarkMatter implementation uses `"3"` for checkpoint envelopes specifically to avoid collision with Context Passport `"1.0"` and DarkMatter's internal commit envelope `"2"`.
+The checkpoint envelope is a different schema from the Context Passport itself. Mixing them creates ambiguity. One implementation pattern: use a distinct integer (e.g., `"3"`) for checkpoint envelopes so it cannot be confused with Context Passport `"1.0"` or with any operator-internal envelope versions.
 
 ### Why a public GitHub repo?
 
@@ -176,7 +176,7 @@ This is the same proof structure as Certificate Transparency's inclusion proofs 
 
 ## 6. Operator architecture (reference)
 
-The pattern from DarkMatter's implementation, as a reference:
+A reference operator-side architecture:
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -246,7 +246,7 @@ The operator publishes (in the witness-log repo or in docs):
 - The operator's signing public key
 - A reference verifier in code
 
-A complete verifier needs roughly 150 lines of code. The DarkMatter reference verifier is published at `github.com/darkmatter-hub/darkmatter` (a Python script that takes a passport `id` and returns "verified" / "broken" / "not yet anchored" with the proof chain).
+A complete verifier needs roughly 150 lines of code. Operators are encouraged to publish a reference verifier alongside their Witness Log so any third party can verify inclusion without operator cooperation. The verifier typically takes a passport `id` and returns "verified" / "broken" / "not yet anchored" along with the proof chain it followed.
 
 Anyone can run the verifier offline given:
 
@@ -292,7 +292,7 @@ Every committed passport remains verifiable as long as:
 - The checkpoint envelope is in the public repo (GitHub keeps repos indefinitely, but customers should also mirror the repo)
 - The OTS proof file is in the public repo
 
-The customer can verify offline using the same reference verifier code without needing the operator's server to be alive. This is the "even if the operator goes away" property advertised on the DarkMatter homepage.
+The customer can verify offline using the same reference verifier code without needing the operator's server to be alive. This is the "even if the operator goes away, the records remain verifiable" property — the structural reason a Witness Log meaningfully differs from a vendor-controlled audit log.
 
 ### Latency budget for inclusion proofs
 
@@ -345,7 +345,7 @@ That's the entire architecture. Total code: a few hundred lines per component. T
 
 ## 11. What this document does not cover
 
-- **The specific schema for the checkpoint envelope.** This is operator-defined. The DarkMatter implementation uses one specific schema; other operators MAY use different schemas as long as they document them.
+- **The specific schema for the checkpoint envelope.** This is operator-defined. Different operators MAY use different schemas as long as they document them publicly so verifiers can interpret each operator's Witness Log.
 - **Cross-operator interoperability.** Two operators with different checkpoint schemas cannot directly cross-verify each other's logs. Standardization here is a future spec work item.
 - **Privacy-preserving Witness Logs.** Some operators may need to publish anchors without exposing which commits are in them (e.g., for confidential workflows). This requires a different cryptographic construction (e.g., a polynomial commitment or KZG-based proof) and is out of scope for v1.0.
 
