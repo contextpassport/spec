@@ -16,6 +16,8 @@ Maintainers have merge rights on the canonical repository.
 
 The current list of maintainers is published in the `.github/CODEOWNERS` file of the canonical repository.
 
+**We are actively recruiting additional maintainers.** A standard with one maintainer is, in practice, a vendor schema. The credibility of Context Passport as a community standard grows with every additional independent maintainer. See [`CONTRIBUTING.md` §5](CONTRIBUTING.md#5-becoming-a-maintainer) for the path.
+
 **Becoming a maintainer:** Maintainers are added by consensus of existing maintainers after sustained contribution (typically: three substantive merged pull requests over three months, plus participation in spec discussions). The goal is to grow to at least three independent maintainers from at least two organizations within twelve months of v1.0 final.
 
 ## Decision-making
