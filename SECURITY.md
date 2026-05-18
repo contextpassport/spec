@@ -4,7 +4,7 @@
 
 If you discover a security vulnerability in the Context Passport specification or any maintainer-published reference implementation, please report it privately.
 
-**Email:** security@darkmatterhub.ai
+**Email:** security@contextpassport.com
 
 Please include:
 

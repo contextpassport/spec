@@ -1,7 +1,7 @@
 # Context Passport for MCP
 
 **Status:** Draft proposal
-**Authors:** DarkMatter (initial steward)
+**Authors:** Context Passport maintainers
 **Last updated:** 2026
 **Target audience:** MCP working group, MCP server implementers, MCP client implementers, Anthropic MCP team
 **Relationship to MCP:** Optional extension. No required changes to MCP itself.

@@ -361,7 +361,7 @@ The marginal cost of anchoring is small — a few hundred milliseconds of networ
 
 ## What this document does not cover
 
-- **Multi-hash anchoring.** Anchoring a single Merkle root over many passports at once (batch optimization). This is what most Witness Log implementations do internally; see the DarkMatter Witness Log design for one approach.
+- **Multi-hash anchoring.** Anchoring a single Merkle root over many passports at once (batch optimization). This is what most Witness Log implementations do internally; see `docs/witness-log.md` for the reference architecture.
 - **Custom calendar operation.** Running a private OTS calendar for internal-only anchoring. Possible but rarely necessary.
 - **Cross-chain anchoring.** Anchoring to chains other than Bitcoin. OTS supports Litecoin and a few others; the Bitcoin attestation is the canonical one for most verifiers.
 

@@ -381,7 +381,7 @@ For an SDK or implementation reviewer:
 
 ## 10. Reporting a vulnerability
 
-If you discover a defect in the spec, a reference implementation, or this threat model, please report it privately to **security@darkmatterhub.ai** per `SECURITY.md`. We follow coordinated disclosure.
+If you discover a defect in the spec, a reference implementation, or this threat model, please report it privately to **security@contextpassport.com** per `SECURITY.md`. We follow coordinated disclosure.
 
 ---
 

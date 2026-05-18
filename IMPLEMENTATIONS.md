@@ -4,19 +4,20 @@ A registry of known Context Passport compatible implementations.
 
 To add your implementation: open a pull request editing this file.
 
-## Reference Implementation
+## Reference implementations (maintained by the Context Passport maintainers)
 
 | Name | Language | License | Repository | Conformance | Notes |
 |---|---|---|---|---|---|
-| DarkMatter | Node.js | Apache-2.0 | github.com/darkmatter-hub/darkmatter | Core (Signed pending) | Hash chain, storage, replay, fork, verify, export, Witness Log anchoring |
+| `contextpassport/python` | Python | Apache-2.0 | github.com/contextpassport/python | Core, Signed | Pure-Python, no required dependencies. Optional Ed25519 signing and LangGraph integration. |
+| `contextpassport/typescript` | TypeScript | Apache-2.0 | github.com/contextpassport/typescript | Core | TypeScript reference, ESM, no runtime dependencies. |
 
-## Community Implementations
+## Third-party implementations
 
 *None listed yet. Be the first.*
 
-To list your implementation here:
-1. Verify your implementation passes the required vectors in `conformance-tests/`
-2. Open a pull request adding a row to this table
+To list a third-party implementation here:
+1. Verify your implementation passes the required vectors in [`contextpassport/conformance-tests`](https://github.com/contextpassport/conformance-tests)
+2. Open a pull request adding a row to a new table below
 3. Include: name, primary language, license, repository link, conformance level, brief notes
 
 ## Conformance levels
