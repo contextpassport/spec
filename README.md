@@ -54,6 +54,7 @@ The goal: become the standard envelope format for AI agent events — a record a
   - [`threat-model.md`](docs/threat-model.md) — adversaries, defenses, defense-in-depth recommendations
 - [`proposals/`](proposals/) — draft proposals
   - [`context-passport-for-mcp.md`](proposals/context-passport-for-mcp.md) — MCP extension proposal
+  - [`canonical-json-jcs.md`](proposals/canonical-json-jcs.md) — adopt RFC 8785 in v2.0 to close v1.x portability gaps
 - [`EXTENSIONS.md`](EXTENSIONS.md) — vendor-namespaced extension registry
 - [`IMPLEMENTATIONS.md`](IMPLEMENTATIONS.md) — known implementations
 - [`GOVERNANCE.md`](GOVERNANCE.md) — how this specification evolves
