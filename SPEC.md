@@ -1,7 +1,7 @@
 # Context Passport Specification
 
-**Version:** 1.0-draft  
-**Status:** Draft  
+**Version:** 1.0  
+**Status:** Stable for the v1.x line. Reference implementations are released as semver-stable (`context-passport==1.0.x` on PyPI, `@contextpassport/core@1.0.x` on npm). New features ship via the extension model (see `EXTENSIONS.md`) without breaking existing implementations. Breaking changes require a major version per `GOVERNANCE.md` and `docs/migration-and-versioning.md`.  
 **Specification license:** CC0 1.0 Universal (public domain)  
 **Reference implementation license:** Apache-2.0 (with explicit patent grant)  
 **Maintained by:** Context Passport maintainers
@@ -237,7 +237,7 @@ Custom event types are permitted. Implementations SHOULD prefix custom types wit
 Implementations MUST compute the integrity block as follows:
 
 ```
-canonical_payload = JSON.stringify(payload, Object.keys(payload).sort())
+canonical_payload = canonical_json(payload)
 payload_hash      = "sha256:" + hex(sha256(canonical_payload))
 
 if parent exists:
@@ -250,7 +250,34 @@ else:
 integrity_hash   = "sha256:" + hex(sha256(chain_input))
 ```
 
-**Canonicalization** means serializing the payload object with keys sorted alphabetically at every level, producing a deterministic byte sequence for any given payload value. This ensures the same payload always produces the same hash regardless of key insertion order.
+#### 3.4.1 Canonical-JSON algorithm (v1.x)
+
+`canonical_json(value)` produces a deterministic UTF-8 byte sequence for any JSON value. v1.x of this specification defines the algorithm as follows:
+
+1. **Key order.** Object keys are sorted at every level. Sort order is lexicographic by Unicode code point (equivalent to JavaScript's `Array.prototype.sort()` and Python's `sorted()` with default comparison on string keys).
+2. **No whitespace.** No spaces, tabs, or newlines between tokens. Equivalent to `JSON.stringify(value)` with no spacing arguments, or Python's `json.dumps(value, separators=(",", ":"))`.
+3. **String encoding.** Strings are encoded as UTF-8 bytes. Conformant implementations SHOULD emit non-ASCII characters as raw UTF-8 bytes (not `\uXXXX` escape sequences). Python implementations using `json.dumps` MUST pass `ensure_ascii=False` to comply.
+4. **Number formatting.** Numbers are serialized using each language's default JSON number serialization. This is the source of the v1.x portability gap noted below.
+5. **Output encoding.** The output is a UTF-8 byte sequence. The SHA-256 hash is computed over those bytes.
+
+#### 3.4.2 Known portability limitations of v1.x
+
+The v1.x canonical-JSON algorithm produces byte-equivalent output across implementations for the common case of ASCII-only string payloads and integer values within JavaScript's safe-integer range. It does NOT produce byte-equivalent output across implementations for:
+
+- **Non-ASCII strings** when implementations differ on `ensure_ascii` behavior. Implementations conforming to this spec MUST emit raw UTF-8 (not `\uXXXX` escapes), but a 1.0.x record produced by an implementation that did not pass `ensure_ascii=False` will not verify under one that does, and vice versa.
+- **Numbers requiring more precision than JavaScript's `Number.MAX_SAFE_INTEGER` (2^53 − 1).** JavaScript silently truncates such values. Records containing integers larger than 2^53 − 1 may not produce identical hashes across language implementations.
+- **Floating-point numbers.** Different language defaults for serializing floats (e.g., `1.0` vs `1`, scientific notation, precision) may produce different bytes.
+
+**For v1.x portability,** applications SHOULD:
+- Limit payload string content to ASCII OR ensure all implementations they care about have `ensure_ascii=False` semantics.
+- Limit numeric values to integers in the range `[-(2^53 − 1), 2^53 − 1]`. Larger integers should be encoded as strings.
+- Avoid floating-point numbers in payloads where cross-implementation verification is required. Encode quantities at fixed precision as integers (e.g., cents instead of dollars).
+
+#### 3.4.3 Future work
+
+A future v2.0 of this specification will adopt [RFC 8785 (JSON Canonicalization Scheme)](https://datatracker.ietf.org/doc/html/rfc8785) as the canonicalization algorithm. RFC 8785 closes all three of the gaps above with a single well-defined algorithm. The proposal and migration path are documented at [`proposals/canonical-json-jcs.md`](proposals/canonical-json-jcs.md). The polyglot conformance harness at [`contextpassport/conformance-tests/runner/polyglot/`](https://github.com/contextpassport/conformance-tests/tree/main/runner/polyglot) tracks the v1.x divergences explicitly so that v2.0 adoption can be verified against the same payloads.
+
+#### 3.4.4 Verification
 
 **Verification** of a chain requires only the sequence of passports. For each passport after the root:
 1. Recompute `payload_hash` from the stored payload.
