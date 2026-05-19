@@ -2,7 +2,7 @@
 
 **The envelope format for AI agent events.**
 
-Version 1.0 · Draft · Spec: CC0 1.0 · Reference implementations: Apache-2.0
+Version 2.0 · Spec: CC0 1.0 · Reference implementations: Apache-2.0
 
 ---
 
@@ -14,8 +14,8 @@ The goal: become the standard envelope format for AI agent events — a record a
 
 ```json
 {
-  "$schema": "https://contextpassport.com/schema/v1.json",
-  "schema_version": "1.0",
+  "$schema": "https://contextpassport.com/schema/v2.json",
+  "schema_version": "2.0",
   "id": "ctx_1774358291224_bad9b976",
   "parent_id": "ctx_previous_or_null",
   "created_by": {
@@ -42,14 +42,16 @@ The goal: become the standard envelope format for AI agent events — a record a
 
 ## Contents
 
-- [`SPEC.md`](SPEC.md) — full specification
-- [`schema/v1.json`](schema/v1.json) — machine-readable JSON Schema
+- [`SPEC.md`](SPEC.md) — full specification (v2.0)
+- [`schema/v2.json`](schema/v2.json) — machine-readable JSON Schema (v2.0)
+- [`schema/v1.json`](schema/v1.json) — machine-readable JSON Schema (v1.x, retained for compatibility)
 - [`docs/`](docs/) — non-normative design notes for implementers
   - [`throughput-and-trust.md`](docs/throughput-and-trust.md) — submission patterns, trust properties, SDK guidance
   - [`external-anchoring.md`](docs/external-anchoring.md) — using OpenTimestamps (and alternatives) to anchor passports at creation time
   - [`key-management.md`](docs/key-management.md) — file-based, PKI/X.509, and DID-based signing key patterns
   - [`witness-log.md`](docs/witness-log.md) — operator architecture for publishing public, anchored checkpoint chains
   - [`migration-and-versioning.md`](docs/migration-and-versioning.md) — minor vs. major versions, cross-version compatibility, upgrade playbook
+  - [`migrations/v1-to-v2.md`](docs/migrations/v1-to-v2.md) — concrete operator playbook for the v1.x → v2.0 upgrade
   - [`regulatory-mapping.md`](docs/regulatory-mapping.md) — field-by-field mapping to EU AI Act, FINRA 17a-4, HIPAA, SOX, GDPR, PCI DSS, ISO/IEC 42001, NIST AI RMF
   - [`threat-model.md`](docs/threat-model.md) — adversaries, defenses, defense-in-depth recommendations
 - [`proposals/`](proposals/) — draft proposals
@@ -72,7 +74,7 @@ Third-party implementations are listed in [`IMPLEMENTATIONS.md`](IMPLEMENTATIONS
 
 ## Status
 
-Draft v1.0. The schema is stable enough to build against. We are collecting feedback before advancing to v1.0 final.
+v2.0. Adopts RFC 8785 (JCS) for cross-implementation byte-equivalence. Reference SDKs ship as `context-passport==2.0.x` on PyPI and `@contextpassport/core@2.0.x` on npm. v1.x records remain verifiable via the compatibility shim in both SDKs. See [`docs/migrations/v1-to-v2.md`](docs/migrations/v1-to-v2.md).
 
 Feedback welcome via GitHub Issues.
 
