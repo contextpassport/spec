@@ -18,7 +18,7 @@ The current list of maintainers is published in the `.github/CODEOWNERS` file of
 
 **We are actively recruiting additional maintainers.** A standard with one maintainer is, in practice, a vendor schema. The credibility of Context Passport as a community standard grows with every additional independent maintainer. See [`CONTRIBUTING.md` §5](CONTRIBUTING.md#5-becoming-a-maintainer) for the path.
 
-**Becoming a maintainer:** Maintainers are added by consensus of existing maintainers after sustained contribution (typically: three substantive merged pull requests over three months, plus participation in spec discussions). The goal is to grow to at least three independent maintainers from at least two organizations within twelve months of v1.0 final.
+**Becoming a maintainer:** Maintainers are added by consensus of existing maintainers after sustained contribution (typically: three substantive merged pull requests over three months, plus participation in spec discussions). The goal is to grow to at least three independent maintainers from at least two organizations.
 
 ## Decision-making
 
@@ -26,7 +26,7 @@ The current list of maintainers is published in the `.github/CODEOWNERS` file of
 
 **Substantive changes** (new fields, changed semantics, new event types in the core spec): require a public RFC issue open for at least 14 days, with explicit approval from at least two maintainers and no unresolved objections from any maintainer.
 
-**Breaking changes** (changes that would invalidate v1.0-conformant passports): not permitted within a major version. Breaking changes ship in a new major version with a documented migration path.
+**Breaking changes** (changes that would invalidate prior-major-version-conformant passports): not permitted within a major version. Breaking changes ship in a new major version with a documented migration path and a per-version verification shim in the reference implementations (see [`docs/migrations/v1-to-v2.md`](docs/migrations/v1-to-v2.md) for the v1.x → v2.0 worked example).
 
 **Extensions** (new event types or fields added via the namespace mechanism): do not require a spec change. See `EXTENSIONS.md`.
 

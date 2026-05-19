@@ -8,8 +8,8 @@ To add your implementation: open a pull request editing this file.
 
 | Name | Language | License | Repository | Conformance | Notes |
 |---|---|---|---|---|---|
-| `contextpassport/python` | Python | Apache-2.0 | github.com/contextpassport/python | Core, Signed | Pure-Python, no required dependencies. Optional Ed25519 signing and LangGraph integration. |
-| `contextpassport/typescript` | TypeScript | Apache-2.0 | github.com/contextpassport/typescript | Core | TypeScript reference, ESM, no runtime dependencies. |
+| `contextpassport/python` | Python | Apache-2.0 | github.com/contextpassport/python | v2.0 Core, Signed | Pure-Python, no required dependencies. Optional Ed25519 signing and LangGraph integration. v1.x records verifiable via `context_passport.compat.v1`. |
+| `contextpassport/typescript` | TypeScript | Apache-2.0 | github.com/contextpassport/typescript | v2.0 Core, Signed | TypeScript reference, ESM, no runtime dependencies. Ed25519 signing via Node `crypto`. v1.x records verifiable via `@contextpassport/core/compat/v1`. |
 
 ## Third-party implementations
 
@@ -22,17 +22,20 @@ To list a third-party implementation here:
 
 ## Conformance levels
 
-See `conformance-tests/README.md` for the full test suite. Three levels:
+See [`contextpassport/conformance-tests`](https://github.com/contextpassport/conformance-tests) for the full test suite. Three levels:
 
 - **Core** — passes `vectors/required/`. Produces and verifies plain (unsigned) passports correctly.
 - **Signed** — Core plus `vectors/signed/`. Produces and verifies Ed25519-signed passports.
 - **Full** — Signed plus `vectors/recommended/`. Handles fork lineage, extensions, and long chains.
 
-An implementation is **Context Passport v1.0 Core conformant** if it:
+An implementation is **Context Passport v2.0 Core conformant** if it:
 
-1. Produces passports that validate against `schema/v1.json`
-2. Correctly computes the integrity block as defined in SPEC.md section 3.4
+1. Produces passports that validate against `schema/v2.json`
+2. Correctly computes the integrity block as defined in SPEC.md section 3.4 (RFC 8785 / JCS canonicalization)
 3. Correctly links parent commits via `parent_id`
-4. Correctly verifies chains by recomputing hashes
-5. Sets `schema_version: "1.0"` on all produced passports
+4. Correctly verifies chains by recomputing hashes. For mixed-version chains, dispatches per-record on `schema_version` (v1.x records use the v1.x algorithm; v2.x records use JCS).
+5. Sets `schema_version: "2.0"` on all newly produced passports
 6. Accepts and ignores unknown namespaced extensions without error
+7. Passes the polyglot conformance harness at [`contextpassport/conformance-tests`](https://github.com/contextpassport/conformance-tests)
+
+An implementation may additionally claim **v1.x Core conformant** by verifying v1.x records under the v1.x algorithm (typically via a `compat.v1` shim).

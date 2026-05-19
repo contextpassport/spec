@@ -48,7 +48,7 @@ The pattern is three steps, applied at passport creation time:
 3. Store .ots alongside    → upgrade to Bitcoin proof when confirmed
 ```
 
-The `.ots` file is a separate artifact from the passport itself. Passports remain valid Context Passport v1.0 records whether or not they have a companion `.ots` proof. Implementations choosing to anchor SHOULD store the `.ots` file in the same logical location as the passport — same database row, same directory, same Witness Log entry.
+The `.ots` file is a separate artifact from the passport itself. Passports remain valid Context Passport records whether or not they have a companion `.ots` proof. Implementations choosing to anchor SHOULD store the `.ots` file in the same logical location as the passport — same database row, same directory, same Witness Log entry.
 
 A namespaced extension field MAY be added to the passport to advertise that a proof exists:
 
