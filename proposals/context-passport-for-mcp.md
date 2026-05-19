@@ -111,10 +111,10 @@ These are registered as namespaced extensions in `EXTENSIONS.md` and may be prom
 An MCP implementation is **Context Passport for MCP v0.1 conformant** if it:
 
 1. Emits one Context Passport per tool invocation (server side or client side).
-2. The emitted passports validate against `schema/v1.json`.
+2. The emitted passports validate against `schema/v2.json` (or `schema/v1.json` for implementations that have not yet upgraded).
 3. Includes the `X-Context-Passport-Id` header on every MCP message it sends, where the header value is the `id` of the passport corresponding to that message.
 4. Correctly sets `event.type` according to the schema mapping table above.
-5. Passes the relevant subset of the Context Passport v1.0 conformance test suite.
+5. Passes the relevant subset of the Context Passport conformance test suite.
 
 Additional conformance levels (signed, chain-linked) follow the Context Passport spec's conformance levels.
 

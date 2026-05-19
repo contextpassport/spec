@@ -74,7 +74,7 @@ The SHA-256 hash chain enables any party holding a sequence of passports to veri
 
 ### 2.4 Versioned from the first release
 
-`schema_version` is a required field. All future versions of this specification will maintain backward compatibility with v1.0 passports, or will introduce a new major version number with a defined migration path.
+`schema_version` is a required field. Every major version of this specification either maintains backward compatibility with prior-major records, or ships a documented migration path and a per-version verification shim. v2.0 ships such a shim for v1.x records ([`context_passport.compat.v1`](https://github.com/contextpassport/python/tree/main/src/context_passport/compat) in Python, equivalent in TypeScript); see [`docs/migrations/v1-to-v2.md`](docs/migrations/v1-to-v2.md).
 
 ### 2.5 Open governance
 
@@ -94,8 +94,8 @@ A Context Passport is a JSON object with the following structure. Fields marked 
 
 ```json
 {
-  "$schema":        "https://contextpassport.com/schema/v1.json",
-  "schema_version": "1.0",
+  "$schema":        "https://contextpassport.com/schema/v2.json",
+  "schema_version": "2.0",
 
   "id":         "ctx_{unix_ms}_{6_hex_bytes}",
   "parent_id":  "ctx_... | null",
@@ -211,7 +211,7 @@ Populated automatically by implementations on fork operations.
 
 #### 3.2.7 Signature (optional)
 
-The signature block is optional in v1.0 but RECOMMENDED for any implementation that requires non-repudiation. When present, the signature MUST be computed over the canonical bytes of the envelope with the `signature.signature` field cleared.
+The signature block is optional but RECOMMENDED for any implementation that requires non-repudiation. When present, the signature MUST be computed over the canonical bytes of the envelope with the `signature.signature` field cleared. Canonical bytes are produced by the algorithm in section 3.4 (RFC 8785 / JCS for v2.0 records; the v1.x algorithm for v1.x records).
 
 | Field | Description |
 |---|---|
@@ -354,7 +354,23 @@ This specification does not require any IANA actions.
 ## Appendix A: Minimal implementation (Python)
 
 ```python
-import json, hashlib, time, secrets
+import json, hashlib, math, time, secrets
+
+def _normalize(value):
+    """JCS number normalization: reject non-finite, fold integer-valued floats to int."""
+    if isinstance(value, bool) or value is None:
+        return value
+    if isinstance(value, float):
+        if math.isnan(value) or math.isinf(value):
+            raise ValueError("JCS does not permit NaN or Infinity")
+        if value == 0:
+            return 0
+        return int(value) if value.is_integer() else value
+    if isinstance(value, dict):
+        return {k: _normalize(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_normalize(v) for v in value]
+    return value  # int, str
 
 def make_passport(agent_id, agent_name, payload, parent=None,
                   to_agent_id=None, role=None, provider=None, model=None,
@@ -364,8 +380,10 @@ def make_passport(agent_id, agent_name, payload, parent=None,
     hex_  = secrets.token_hex(6)
     ctx_id = f"ctx_{ts}_{hex_}"
 
-    canonical  = json.dumps(payload, sort_keys=True, separators=(',', ':'))
-    pay_hash   = "sha256:" + hashlib.sha256(canonical.encode()).hexdigest()
+    # RFC 8785 (JCS) canonicalization: sorted keys, raw UTF-8, normalized numbers.
+    canonical  = json.dumps(_normalize(payload), sort_keys=True, ensure_ascii=False,
+                            separators=(',', ':'))
+    pay_hash   = "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
     if parent:
         parent_hash = parent["integrity"]["integrity_hash"]
@@ -382,8 +400,8 @@ def make_passport(agent_id, agent_name, payload, parent=None,
     now = datetime.now(timezone.utc).isoformat()
 
     return {
-        "$schema":        "https://contextpassport.com/schema/v1.json",
-        "schema_version": "1.0",
+        "$schema":        "https://contextpassport.com/schema/v2.json",
+        "schema_version": "2.0",
         "id":             ctx_id,
         "parent_id":      parent_id,
         "trace_id":       trace_id,
@@ -419,8 +437,9 @@ def verify_chain(passports):
     """Returns True if chain is intact, False if any hash mismatch detected."""
     prev = None
     for p in passports:
-        canonical  = json.dumps(p["payload"], sort_keys=True, separators=(',', ':'))
-        pay_hash   = "sha256:" + hashlib.sha256(canonical.encode()).hexdigest()
+        canonical  = json.dumps(_normalize(p["payload"]), sort_keys=True,
+                                ensure_ascii=False, separators=(',', ':'))
+        pay_hash   = "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
         parent_hash = prev["integrity"]["integrity_hash"] if prev else None
         chain_input = pay_hash + (parent_hash or "root")
         expected    = "sha256:" + hashlib.sha256(chain_input.encode()).hexdigest()
@@ -432,10 +451,13 @@ def verify_chain(passports):
 
 ---
 
-## Appendix B: JSON Schema (v1.0)
+## Appendix B: JSON Schemas
 
-The machine-readable JSON Schema is at `schema/v1.json` in this repository.
+The machine-readable JSON Schemas are in this repository:
+
+- `schema/v2.json` — current specification (v2.0)
+- `schema/v1.json` — retained for verifying v1.x records via the compatibility shim
 
 ---
 
-*Context Passport Specification v1.0-draft. Specification released under CC0 1.0. Reference implementations released under Apache-2.0. Maintained by the Context Passport maintainers. Contributions welcome via GitHub.*
+*Context Passport Specification v2.0. Specification released under CC0 1.0. Reference implementations released under Apache-2.0. Maintained by the Context Passport maintainers. Contributions welcome via GitHub.*

@@ -73,7 +73,7 @@ We are explicitly looking for maintainers who:
 - Will engage steadily over time, not just contribute once
 - Are willing to push back on bad ideas including ours
 
-The goal in `GOVERNANCE.md` is to have at least three independent maintainers from at least two organizations within twelve months of v1.0 final. We are currently below that. Help us get there.
+The goal in `GOVERNANCE.md` is to have at least three independent maintainers from at least two organizations. We are currently below that. Help us get there.
 
 ## 6. What kinds of issues are good first contributions
 
@@ -101,7 +101,7 @@ We try to respond to everything within a few days. If you don't hear back in a w
 ## Pull request checklist
 
 - [ ] Change is editorial OR is referenced from an accepted RFC OR is an extension registration
-- [ ] If the change affects the schema, `schema/v1.json` is updated to match `SPEC.md`
+- [ ] If the change affects the schema, `schema/v2.json` is updated to match `SPEC.md` (and `schema/v1.json` only if the change is back-applicable to the v1.x line)
 - [ ] If the change affects examples, the example JSON validates against the schema
 - [ ] If the change adds a new conformance requirement, the conformance test suite has been updated
 - [ ] `SPEC.md` and `README.md` are kept in sync where they discuss the same concept

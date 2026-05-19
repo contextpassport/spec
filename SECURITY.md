@@ -19,7 +19,7 @@ We will acknowledge receipt within 72 hours and aim to provide an initial respon
 
 This policy covers:
 
-- The Context Passport specification (`SPEC.md`, `schema/v1.json`)
+- The Context Passport specification (`SPEC.md`, `schema/v2.json`, `schema/v1.json`)
 - Reference implementations published under the `contextpassport` GitHub organization
 - The conformance test suite
 
