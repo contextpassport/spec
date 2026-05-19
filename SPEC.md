@@ -1,7 +1,7 @@
 # Context Passport Specification
 
-**Version:** 1.0  
-**Status:** Stable for the v1.x line. Reference implementations are released as semver-stable (`context-passport==1.0.x` on PyPI, `@contextpassport/core@1.0.x` on npm). New features ship via the extension model (see `EXTENSIONS.md`) without breaking existing implementations. Breaking changes require a major version per `GOVERNANCE.md` and `docs/migration-and-versioning.md`.  
+**Version:** 2.0  
+**Status:** v2.0 adopts RFC 8785 (JSON Canonicalization Scheme) for hashing and signing, closing the cross-implementation portability gaps of v1.x. Reference implementations: `context-passport==2.0.x` on PyPI, `@contextpassport/core@2.0.x` on npm. v1.x records remain verifiable via the compatibility shim shipped with v2.x. Migration playbook in [`docs/migrations/v1-to-v2.md`](docs/migrations/v1-to-v2.md). New features ship via the extension model (see `EXTENSIONS.md`) without breaking existing implementations.  
 **Specification license:** CC0 1.0 Universal (public domain)  
 **Reference implementation license:** Apache-2.0 (with explicit patent grant)  
 **Maintained by:** Context Passport maintainers
@@ -250,32 +250,29 @@ else:
 integrity_hash   = "sha256:" + hex(sha256(chain_input))
 ```
 
-#### 3.4.1 Canonical-JSON algorithm (v1.x)
+#### 3.4.1 Canonical-JSON algorithm (v2.0)
 
-`canonical_json(value)` produces a deterministic UTF-8 byte sequence for any JSON value. v1.x of this specification defines the algorithm as follows:
+`canonical_json(value)` produces a deterministic UTF-8 byte sequence for any JSON value. v2.0 of this specification adopts [RFC 8785: JSON Canonicalization Scheme (JCS)](https://datatracker.ietf.org/doc/html/rfc8785) as the normative algorithm. All conformant v2.0 implementations MUST produce byte-identical output for the same input JSON value.
 
-1. **Key order.** Object keys are sorted at every level. Sort order is lexicographic by Unicode code point (equivalent to JavaScript's `Array.prototype.sort()` and Python's `sorted()` with default comparison on string keys).
-2. **No whitespace.** No spaces, tabs, or newlines between tokens. Equivalent to `JSON.stringify(value)` with no spacing arguments, or Python's `json.dumps(value, separators=(",", ":"))`.
-3. **String encoding.** Strings are encoded as UTF-8 bytes. Conformant implementations SHOULD emit non-ASCII characters as raw UTF-8 bytes (not `\uXXXX` escape sequences). Python implementations using `json.dumps` MUST pass `ensure_ascii=False` to comply.
-4. **Number formatting.** Numbers are serialized using each language's default JSON number serialization. This is the source of the v1.x portability gap noted below.
-5. **Output encoding.** The output is a UTF-8 byte sequence. The SHA-256 hash is computed over those bytes.
+In summary, JCS specifies:
 
-#### 3.4.2 Known portability limitations of v1.x
+1. **Key order.** Object keys are sorted at every level by UTF-16 code-unit order.
+2. **No whitespace.** No spaces, tabs, or newlines between tokens.
+3. **String escaping.** Only the seven JSON-mandated control-character escapes plus `"` and `\\`. All other Unicode characters are emitted as raw UTF-8 bytes.
+4. **Number formatting.** Per the ECMAScript `Number.prototype.toString` algorithm: integer-valued numbers serialize without a decimal point, negative zero collapses to `0`, trailing zeros are removed, and scientific notation is deterministic. `NaN` and `Infinity` are not representable and MUST be rejected.
+5. **Output encoding.** The output is a UTF-8 byte sequence. SHA-256 is computed over those bytes.
 
-The v1.x canonical-JSON algorithm produces byte-equivalent output across implementations for the common case of ASCII-only string payloads and integer values within JavaScript's safe-integer range. It does NOT produce byte-equivalent output across implementations for:
+Refer to RFC 8785 for the full algorithm. Reference implementations: [`jcs`](https://pypi.org/project/jcs/) (Python), [`canonicalize`](https://www.npmjs.com/package/canonicalize) (TypeScript). Either may be used; the reference SDKs implement JCS inline to avoid an extra dependency.
 
-- **Non-ASCII strings** when implementations differ on `ensure_ascii` behavior. Implementations conforming to this spec MUST emit raw UTF-8 (not `\uXXXX` escapes), but a 1.0.x record produced by an implementation that did not pass `ensure_ascii=False` will not verify under one that does, and vice versa.
-- **Numbers requiring more precision than JavaScript's `Number.MAX_SAFE_INTEGER` (2^53 − 1).** JavaScript silently truncates such values. Records containing integers larger than 2^53 − 1 may not produce identical hashes across language implementations.
-- **Floating-point numbers.** Different language defaults for serializing floats (e.g., `1.0` vs `1`, scientific notation, precision) may produce different bytes.
+#### 3.4.2 Numeric range constraint
 
-**For v1.x portability,** applications SHOULD:
-- Limit payload string content to ASCII OR ensure all implementations they care about have `ensure_ascii=False` semantics.
-- Limit numeric values to integers in the range `[-(2^53 − 1), 2^53 − 1]`. Larger integers should be encoded as strings.
-- Avoid floating-point numbers in payloads where cross-implementation verification is required. Encode quantities at fixed precision as integers (e.g., cents instead of dollars).
+JCS specifies number serialization but cannot widen the range of numbers a host language can represent. Implementations in languages whose default number type is IEEE-754 double precision (e.g., JavaScript) cannot losslessly carry integers outside `[-(2^53 − 1), 2^53 − 1]`. Applications that need arbitrary-precision integer values MUST encode them as strings in the payload.
 
-#### 3.4.3 Future work
+#### 3.4.3 v1.x compatibility
 
-A future v2.0 of this specification will adopt [RFC 8785 (JSON Canonicalization Scheme)](https://datatracker.ietf.org/doc/html/rfc8785) as the canonicalization algorithm. RFC 8785 closes all three of the gaps above with a single well-defined algorithm. The proposal and migration path are documented at [`proposals/canonical-json-jcs.md`](proposals/canonical-json-jcs.md). The polyglot conformance harness at [`contextpassport/conformance-tests/runner/polyglot/`](https://github.com/contextpassport/conformance-tests/tree/main/runner/polyglot) tracks the v1.x divergences explicitly so that v2.0 adoption can be verified against the same payloads.
+v1.x records remain verifiable under v2.0 via the compatibility shim shipped in the reference implementations (`context_passport.compat.v1` in Python, `@contextpassport/core/compat/v1` in TypeScript). Verifiers dispatch per-record on `schema_version`: records carrying `"1.0"` or any other `"1.x"` value are hashed using the v1.x algorithm; everything else uses JCS. Mixed-version chains are valid and verify correctly.
+
+The v1.x canonical-JSON algorithm (sorted keys; `json.dumps(value, separators=(",", ":"))` in Python; `JSON.stringify` with a sorted-keys replacer in TypeScript) is retained in the shim solely for backwards compatibility. New implementations SHOULD NOT produce v1.x records.
 
 #### 3.4.4 Verification
 
@@ -291,13 +288,14 @@ If any comparison fails, the chain is `broken` at that point.
 
 ## 4. Conformance
 
-An implementation is **Context Passport v1.0 conformant** if it:
+An implementation is **Context Passport v2.0 conformant** if it:
 
-1. Produces passports that validate against the JSON Schema at `schema/v1.json`.
-2. Correctly computes the integrity block as defined in section 3.4.
+1. Produces passports that validate against the JSON Schema at `schema/v2.json`.
+2. Correctly computes the integrity block per section 3.4 using RFC 8785 (JCS).
 3. Correctly links parent commits via `parent_id`.
-4. Correctly verifies chains by recomputing hashes.
-5. Sets `schema_version: "1.0"` on all produced passports.
+4. Correctly verifies chains by recomputing hashes. For mixed-version chains, dispatches per-record on `schema_version` (v1.x records use the v1.x algorithm; v2.x records use JCS).
+5. Sets `schema_version: "2.0"` on all newly produced passports.
+6. Passes the polyglot conformance harness at [`contextpassport/conformance-tests`](https://github.com/contextpassport/conformance-tests).
 
 Conformant implementations are encouraged to list themselves in the implementations registry at `github.com/contextpassport/spec/IMPLEMENTATIONS.md`. A conformance test suite is published at `github.com/contextpassport/conformance-tests`. An implementation may declare itself conformant only after passing all required test vectors.
 

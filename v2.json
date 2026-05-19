@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://contextpassport.com/schema/v2.json",
+  "title": "Context Passport v2.0",
+  "description": "Open standard for structured, verifiable records of AI agent events. v2.0 adopts RFC 8785 (JCS) as the canonical-JSON algorithm for hashing and signing.",
+  "type": "object",
+  "required": ["schema_version", "id", "branch_key", "created_by", "event", "integrity", "created_at"],
+  "properties": {
+    "$schema":        { "type": "string" },
+    "schema_version": { "type": "string", "const": "2.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^ctx_[0-9]+_[a-f0-9]+$",
+      "description": "Globally unique context ID. Format: ctx_{unix_ms}_{6 hex bytes}"
+    },
+    "parent_id": {
+      "type": ["string", "null"],
+      "description": "ID of the previous context in the chain. Null for root commits."
+    },
+    "trace_id": {
+      "type": ["string", "null"],
+      "description": "Groups multiple commits into a single pipeline run."
+    },
+    "branch_key": {
+      "type": "string",
+      "default": "main",
+      "description": "Branch name. Default: main. Used to distinguish fork branches."
+    },
+    "created_by": {
+      "type": "object",
+      "required": ["agent_id", "agent_name"],
+      "properties": {
+        "agent_id":   { "type": "string" },
+        "agent_name": { "type": "string" },
+        "role": {
+          "type": ["string", "null"],
+          "examples": ["researcher", "writer", "reviewer", "critic", "planner", "executor", "validator"]
+        },
+        "provider": {
+          "type": ["string", "null"],
+          "examples": ["anthropic", "openai", "google", "mistral", "local", "custom"]
+        },
+        "model": { "type": ["string", "null"] }
+      }
+    },
+    "event": {
+      "type": "object",
+      "required": ["type", "timestamp"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "examples": ["commit", "fork", "checkpoint", "revert", "branch", "merge",
+                       "spawn", "retry", "timeout", "error",
+                       "override", "consent", "escalate", "redact", "audit"]
+        },
+        "to_agent_id": { "type": ["string", "null"] },
+        "timestamp":   { "type": "string", "format": "date-time" }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "properties": {
+        "input":     { "description": "What this agent received." },
+        "output":    { "description": "What this agent produced. Prefer structured JSON." },
+        "memory":    { "type": ["object", "null"], "description": "Persistent state and config." },
+        "variables": { "type": ["object", "null"], "description": "Named values for downstream agents." }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "required": ["payload_hash", "integrity_hash", "verification_status"],
+      "properties": {
+        "payload_hash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "description": "sha256(JSON.stringify(payload, sorted_keys))"
+        },
+        "parent_hash": {
+          "type": ["string", "null"],
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "description": "integrity_hash of parent commit. Null for root."
+        },
+        "integrity_hash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "description": "sha256(payload_hash + parent_hash)"
+        },
+        "verification_status": {
+          "type": "string",
+          "enum": ["valid", "broken", "unverified"]
+        },
+        "verified_at": { "type": ["string", "null"], "format": "date-time" }
+      }
+    },
+    "lineage": {
+      "type": "object",
+      "properties": {
+        "fork_of":      { "type": ["string", "null"] },
+        "fork_point":   { "type": ["string", "null"] },
+        "lineage_root": { "type": ["string", "null"] }
+      }
+    },
+    "signature": {
+      "type": "object",
+      "description": "Optional. Provides non-repudiation when present. See SPEC.md section 3.2.7.",
+      "required": ["algorithm", "key_id", "signature"],
+      "properties": {
+        "algorithm":  { "type": "string", "examples": ["ed25519", "ecdsa-p256", "rsa-pss-sha256"] },
+        "key_id":     { "type": "string" },
+        "public_key": { "type": ["string", "null"], "description": "Base64-encoded public key or a reference (DID, URL)." },
+        "signature":  { "type": "string", "description": "Base64-encoded signature over the canonical envelope with signature.signature cleared." }
+      }
+    },
+    "created_at": { "type": "string", "format": "date-time" }
+  }
+}
