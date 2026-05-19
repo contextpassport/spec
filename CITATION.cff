@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you reference Context Passport in research or compliance documentation, please cite this specification."
+title: "Context Passport: An Open Standard for Structured, Verifiable Records of AI Agent Events"
+abstract: "Context Passport defines a minimal JSON envelope for structured, verifiable records of AI agent events. The format is designed to enable interoperability, attribution, and independent verification of agent decisions across frameworks, models, and organizational boundaries."
+type: software
+license: CC0-1.0
+url: https://contextpassport.com
+repository-code: https://github.com/contextpassport/spec
+authors:
+  - name: "Context Passport maintainers"
+keywords:
+  - ai
+  - agents
+  - audit
+  - verification
+  - provenance
+  - context-passport
+  - open-standard
+version: "2.0.0"
+date-released: "2026-05-19"
