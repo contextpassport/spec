@@ -1,0 +1,38 @@
+name: Feature request
+description: Suggest an addition or improvement to Context Passport.
+title: "Feature: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem-statement
+    attributes:
+      label: Problem statement
+      description: What user, implementer, or interoperability problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed solution
+      description: Describe the change you would like to see.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives-considered
+    attributes:
+      label: Alternatives considered
+      description: What alternatives or workarounds have you considered?
+    validations:
+      required: false
+  - type: dropdown
+    id: willing-to-implement
+    attributes:
+      label: Willing to implement?
+      description: Are you willing to open a pull request for this change?
+      options:
+        - "Yes"
+        - "No"
+        - "Maybe, with guidance"
+    validations:
+      required: true

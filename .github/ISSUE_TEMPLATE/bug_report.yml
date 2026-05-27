@@ -1,0 +1,54 @@
+name: Bug report
+description: Report a defect in the spec, schema, or reference behavior.
+title: "Bug: "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe the defect you found.
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: What should happen according to the spec or intended behavior?
+    validations:
+      required: true
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual behavior
+      description: What happened instead?
+    validations:
+      required: true
+  - type: input
+    id: spec-version
+    attributes:
+      label: Spec version
+      description: Which spec version, commit, or release are you using?
+      placeholder: "v0.1.0, main@<commit>, or unknown"
+    validations:
+      required: true
+  - type: input
+    id: reference-implementation-tested
+    attributes:
+      label: Reference implementation tested
+      description: Which reference implementation, SDK, or validator did you test?
+      placeholder: "name/version, commit, or not tested"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: Reproduction steps
+      description: List the smallest set of steps needed to reproduce the issue.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true

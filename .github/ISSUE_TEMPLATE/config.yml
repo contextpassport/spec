@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Spec question / open discussion
+    url: https://github.com/contextpassport/spec/discussions
+    about: Ask usage questions or start an open-ended spec discussion.
+  - name: Security vulnerability
+    url: https://github.com/contextpassport/spec/blob/main/SECURITY.md
+    about: Review the security policy before reporting a vulnerability.

@@ -1,0 +1,43 @@
+name: RFC
+description: Propose and discuss a compatibility-affecting spec change.
+title: "RFC: "
+labels:
+  - rfc
+body:
+  - type: textarea
+    id: problem-statement
+    attributes:
+      label: Problem statement
+      description: What limitation, ambiguity, or interoperability problem motivates this RFC?
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-change
+    attributes:
+      label: Proposed change
+      description: Describe the spec change in enough detail for reviewers to evaluate it.
+    validations:
+      required: true
+  - type: textarea
+    id: backward-compatibility-analysis
+    attributes:
+      label: Backward compatibility analysis
+      description: Explain how existing passports, schemas, validators, or implementations would be affected.
+    validations:
+      required: true
+  - type: input
+    id: reference-implementation-link
+    attributes:
+      label: Reference implementation link
+      description: Link to an implementation, prototype, test fixture, or proof of concept if available.
+      placeholder: "https://github.com/..."
+    validations:
+      required: false
+  - type: input
+    id: requested-review-window
+    attributes:
+      label: Requested review window
+      description: When do you need feedback, and how long should the review window remain open?
+      placeholder: "e.g. 2 weeks, by 2026-06-15"
+    validations:
+      required: true
