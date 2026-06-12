@@ -1,0 +1,128 @@
+[
+  {
+    "$schema": "https://contextpassport.com/schema/v2.json",
+    "schema_version": "2.0",
+    "id": "ctx_1774358291000_a1b2c3d4e5f6",
+    "parent_id": null,
+    "trace_id": "trace_demo_research_brief",
+    "branch_key": "main",
+    "created_by": {
+      "agent_id": "agent-researcher-01",
+      "agent_name": "Research Agent",
+      "role": "researcher",
+      "provider": "example",
+      "model": "demo-agent-v1"
+    },
+    "event": {
+      "type": "commit",
+      "to_agent_id": null,
+      "timestamp": "2026-03-29T10:00:00Z"
+    },
+    "payload": {
+      "input": "Collect public launch notes for Project Atlas.",
+      "output": {
+        "summary": "Found release notes, pricing FAQ, and support article.",
+        "confidence": 0.91,
+        "sources": [
+          "release-notes.md",
+          "pricing-faq.md"
+        ]
+      }
+    },
+    "integrity": {
+      "payload_hash": "sha256:89d60bc4150c0f0401e73986b473f50e0fabf12504429190c25b72ae05f3021a",
+      "parent_hash": null,
+      "integrity_hash": "sha256:376a91e198820768759b43fa2200bb8a27ebb3e39d333ed046b294470a67cb69",
+      "verification_status": "valid",
+      "verified_at": "2026-03-29T10:00:00Z"
+    },
+    "created_at": "2026-03-29T10:00:00Z"
+  },
+  {
+    "$schema": "https://contextpassport.com/schema/v2.json",
+    "schema_version": "2.0",
+    "id": "ctx_1774358350000_b2c3d4e5f6a1",
+    "parent_id": "ctx_1774358291000_a1b2c3d4e5f6",
+    "trace_id": "trace_demo_research_brief",
+    "branch_key": "main",
+    "created_by": {
+      "agent_id": "agent-writer-01",
+      "agent_name": "Writer Agent",
+      "role": "writer",
+      "provider": "example",
+      "model": "demo-agent-v1"
+    },
+    "event": {
+      "type": "commit",
+      "to_agent_id": null,
+      "timestamp": "2026-03-29T10:12:30Z"
+    },
+    "payload": {
+      "input": {
+        "summary": "Found release notes, pricing FAQ, and support article.",
+        "confidence": 0.91,
+        "sources": [
+          "release-notes.md",
+          "pricing-faq.md"
+        ]
+      },
+      "output": {
+        "draft": "Customer-facing launch summary prepared.",
+        "open_questions": [
+          "Confirm enterprise support SLA wording."
+        ]
+      }
+    },
+    "integrity": {
+      "payload_hash": "sha256:0108fdadbad542e6b59c86f3c4eb05669dd84ba5d84b7601fdffde7b344d6b5d",
+      "parent_hash": "sha256:376a91e198820768759b43fa2200bb8a27ebb3e39d333ed046b294470a67cb69",
+      "integrity_hash": "sha256:9a3e149448d9dd044716c7571af203492b13f3d75e9e69d8c75233ffd95d03d4",
+      "verification_status": "valid",
+      "verified_at": "2026-03-29T10:12:30Z"
+    },
+    "created_at": "2026-03-29T10:12:30Z"
+  },
+  {
+    "$schema": "https://contextpassport.com/schema/v2.json",
+    "schema_version": "2.0",
+    "id": "ctx_1774358460000_c3d4e5f6a1b2",
+    "parent_id": "ctx_1774358350000_b2c3d4e5f6a1",
+    "trace_id": "trace_demo_research_brief",
+    "branch_key": "main",
+    "created_by": {
+      "agent_id": "agent-reviewer-01",
+      "agent_name": "Reviewer Agent",
+      "role": "reviewer",
+      "provider": "example",
+      "model": "demo-agent-v1"
+    },
+    "event": {
+      "type": "checkpoint",
+      "to_agent_id": null,
+      "timestamp": "2026-03-29T10:31:00Z"
+    },
+    "payload": {
+      "input": {
+        "draft": "Customer-facing launch summary prepared.",
+        "open_questions": [
+          "Confirm enterprise support SLA wording."
+        ]
+      },
+      "output": {
+        "decision": "approved_with_minor_edits",
+        "notes": [
+          "Remove unverifiable adoption metric.",
+          "Keep pricing language source-backed."
+        ]
+      }
+    },
+    "integrity": {
+      "payload_hash": "sha256:3eb2fcd7fa14ffc8b7bab54667ffdc68263da2e403ac0ddfe78065adb0f8b34f",
+      "parent_hash": "sha256:9a3e149448d9dd044716c7571af203492b13f3d75e9e69d8c75233ffd95d03d4",
+      "integrity_hash": "sha256:2e8ce0201b5558f4acb75734f791c2d08f6e3c277e70577b75142019e18c476c",
+      "verification_status": "valid",
+      "verified_at": "2026-03-29T10:31:00Z"
+    },
+    "created_at": "2026-03-29T10:31:00Z"
+  }
+]

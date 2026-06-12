@@ -1,0 +1,39 @@
+{
+  "$schema": "https://contextpassport.com/schema/v2.json",
+  "schema_version": "2.0",
+  "id": "ctx_1774359600000_e5f6a1b2c3d4",
+  "parent_id": null,
+  "trace_id": "trace_demo_research_brief",
+  "branch_key": "main",
+  "created_by": {
+    "agent_id": "agent-billing-reviewer-01",
+    "agent_name": "Billing Review Agent",
+    "role": "billing-reviewer",
+    "provider": "example",
+    "model": "demo-agent-v1"
+  },
+  "event": {
+    "type": "checkpoint",
+    "to_agent_id": null,
+    "timestamp": "2026-03-29T11:10:00Z"
+  },
+  "payload": {
+    "input": "Verify payment approval metadata before fulfillment.",
+    "output": {
+      "decision": "hold_for_invoice_match"
+    }
+  },
+  "integrity": {
+    "payload_hash": "sha256:0ffa7a47f84b1808822fde9ad7b9ecfff5cc75dd15e572fe25bc022b2970b781",
+    "parent_hash": null,
+    "integrity_hash": "sha256:a6588107c1ee8afe9209b8f2e08dbcfd42b44ba0cf5e4a6fe5e94efda2e94900",
+    "verification_status": "valid",
+    "verified_at": "2026-03-29T11:10:00Z"
+  },
+  "created_at": "2026-03-29T11:10:00Z",
+  "extensions": {
+    "acme.payment_amount": 12500,
+    "acme.currency": "USD",
+    "acme.invoice_id": "INV-2026-0042"
+  }
+}
