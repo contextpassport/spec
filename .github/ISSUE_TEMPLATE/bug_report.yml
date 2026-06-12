@@ -30,7 +30,7 @@ body:
     attributes:
       label: Spec version
       description: Which spec version, commit, or release are you using?
-      placeholder: "v0.1.0, main@<commit>, or unknown"
+      placeholder: "v2.0, main@<commit>, or unknown"
     validations:
       required: true
   - type: input
