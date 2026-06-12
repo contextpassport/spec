@@ -98,11 +98,50 @@ Multiple channels, in order of preference:
 
 We try to respond to everything within a few days. If you don't hear back in a week, ping again — sometimes things slip.
 
+## 8. Computing the integrity hash
+
+If you are adding example passports or a new implementation, the most common mistake is the **root** integrity hash. Per [SPEC.md §3.4](SPEC.md), the chain input for a root commit is `payload_hash + "root"` (the literal string `root`), not `payload_hash` alone and not `payload_hash + null`.
+
+The algorithm, for every record:
+
+```
+payload_hash   = "sha256:" + sha256( JCS(payload) )     # RFC 8785 canonical JSON
+
+if the record has a parent:
+    chain_input = payload_hash + parent.integrity.integrity_hash
+else:                                                   # root commit
+    chain_input = payload_hash + "root"
+
+integrity_hash = "sha256:" + sha256( chain_input )
+```
+
+### Worked example
+
+Root commit with `payload = {"output": "hello world"}`:
+
+```
+JCS(payload)   = {"output":"hello world"}
+payload_hash   = sha256:dfd885ae449f5bf64dcf8f71fe5d1fbb4be5f8a2f2f1b9a0eab628a55f9c1d14
+chain_input    = <payload_hash> + "root"
+integrity_hash = sha256:0d02679304b0d80e962627123d406cf9176637551a9df1f4a6366c07b424aa6d
+```
+
+Child commit with `payload = {"input": "hello world", "output": "reviewed"}` whose parent is the root above:
+
+```
+JCS(payload)   = {"input":"hello world","output":"reviewed"}
+payload_hash   = sha256:5c6c949a5c5051dda5536ee80e2189c85eb944536074071f8940633ef8ad3979
+chain_input    = <payload_hash> + <root integrity_hash>
+integrity_hash = sha256:55ce43be6ed6d9a689545147a8e746de90f6aec4ad034abef5c99bf2afeb168c
+```
+
+The reliable way to get this right is to generate records with a reference implementation rather than by hand, then confirm the whole chain with its verifier (`verify_chain()` in the Python SDK, the equivalent in the TypeScript SDK). Do not hand-edit hashes.
+
 ## Pull request checklist
 
 - [ ] Change is editorial OR is referenced from an accepted RFC OR is an extension registration
 - [ ] If the change affects the schema, `schema/v2.json` is updated to match `SPEC.md` (and `schema/v1.json` only if the change is back-applicable to the v1.x line)
-- [ ] If the change affects examples, the example JSON validates against the schema
+- [ ] If the change affects examples, the example JSON validates against the schema, passes `verify_chain()`, and (if signed) passes signature verification. See [§8](#8-computing-the-integrity-hash).
 - [ ] If the change adds a new conformance requirement, the conformance test suite has been updated
 - [ ] `SPEC.md` and `README.md` are kept in sync where they discuss the same concept
 
