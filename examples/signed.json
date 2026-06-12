@@ -31,7 +31,7 @@
   "integrity": {
     "payload_hash": "sha256:5c0f1239de654ec7231d7c1f29788ab31112bde0dbae55635e0d2cf4e9050246",
     "parent_hash": null,
-    "integrity_hash": "sha256:96067f67d5f25a1e5d68dece39e8d631e3dbf6860b585cf7e2065b6968cb05bb",
+    "integrity_hash": "sha256:023d12cccdb6611f57038dd2174765f362b3feace7fb8df2f0813b637493168a",
     "verification_status": "valid",
     "verified_at": "2026-03-29T11:00:00Z"
   },
@@ -39,7 +39,7 @@
   "signature": {
     "algorithm": "ed25519",
     "key_id": "did:example:contextpassport#demo-key-1",
-    "public_key": "MCowBQYDK2VwAyEAu7zDemoPublicKeyForDocsOnlyExample1234567890=",
-    "signature": "MEUCIQDemoSignatureForDocumentationOnlyNotACryptographicProof=="
+    "public_key": "LeBaZ8Bgmwex3N2vGFE/ot5fZxXl+sQ/WMtZxEh07rE=",
+    "signature": "YA2cYGVFrNU1fr7SGeQbIwvZp4T0hpf3qT0ZZkEwG5sx7bqu0zP8cgPr4AOYUbKwXFelmdYXF02O+I2tiO+dAA=="
   }
 }

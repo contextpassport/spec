@@ -32,7 +32,7 @@
     "integrity": {
       "payload_hash": "sha256:89d60bc4150c0f0401e73986b473f50e0fabf12504429190c25b72ae05f3021a",
       "parent_hash": null,
-      "integrity_hash": "sha256:376a91e198820768759b43fa2200bb8a27ebb3e39d333ed046b294470a67cb69",
+      "integrity_hash": "sha256:94c80e78dbfaf8f23623dfc1f1a250c9ce4ef21b8fc5dcb9394a11db42b9cd09",
       "verification_status": "valid",
       "verified_at": "2026-03-29T10:00:00Z"
     },
@@ -75,8 +75,8 @@
     },
     "integrity": {
       "payload_hash": "sha256:0108fdadbad542e6b59c86f3c4eb05669dd84ba5d84b7601fdffde7b344d6b5d",
-      "parent_hash": "sha256:376a91e198820768759b43fa2200bb8a27ebb3e39d333ed046b294470a67cb69",
-      "integrity_hash": "sha256:9a3e149448d9dd044716c7571af203492b13f3d75e9e69d8c75233ffd95d03d4",
+      "parent_hash": "sha256:94c80e78dbfaf8f23623dfc1f1a250c9ce4ef21b8fc5dcb9394a11db42b9cd09",
+      "integrity_hash": "sha256:44350101059afdf7ac0222e271ada4cfc04ccb0a617eddd5caabaacea08a162d",
       "verification_status": "valid",
       "verified_at": "2026-03-29T10:12:30Z"
     },
@@ -118,8 +118,8 @@
     },
     "integrity": {
       "payload_hash": "sha256:3eb2fcd7fa14ffc8b7bab54667ffdc68263da2e403ac0ddfe78065adb0f8b34f",
-      "parent_hash": "sha256:9a3e149448d9dd044716c7571af203492b13f3d75e9e69d8c75233ffd95d03d4",
-      "integrity_hash": "sha256:2e8ce0201b5558f4acb75734f791c2d08f6e3c277e70577b75142019e18c476c",
+      "parent_hash": "sha256:44350101059afdf7ac0222e271ada4cfc04ccb0a617eddd5caabaacea08a162d",
+      "integrity_hash": "sha256:b884301cb2a7d1722095760806b502bd3ac4aaf034bfb58d67185bc4287acae5",
       "verification_status": "valid",
       "verified_at": "2026-03-29T10:31:00Z"
     },
