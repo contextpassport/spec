@@ -54,6 +54,14 @@ are unaffected.
   without a namespace; custom fields and vendor extensions stay MUST (#38). Not
   breaking under this file's definition — no hashed bytes change and no
   previously conforming record becomes non-conforming.
+- `GOVERNANCE.md`: the two-maintainer approval threshold for substantive changes
+  is now satisfiable while the project has fewer than two maintainers, by
+  approval from every listed maintainer plus the full 14-day RFC window. As
+  written, that threshold made every substantive change unmergeable by anyone,
+  including the sole maintainer. The accommodation lapses automatically once a
+  second maintainer is listed in `.github/CODEOWNERS`. The same section now
+  states that reconciling a contradiction between two sections is editorial
+  where no conforming implementation changes behaviour.
 
 ## [2.0] - 2026-05-19
 

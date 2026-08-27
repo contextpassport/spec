@@ -22,9 +22,11 @@ The current list of maintainers is published in the `.github/CODEOWNERS` file of
 
 ## Decision-making
 
-**Editorial changes** (typos, clarifications, examples that do not change behavior): any maintainer may merge.
+**Editorial changes** (typos, clarifications, examples that do not change behavior): any maintainer may merge. A change that reconciles a contradiction between two sections is editorial when it leaves the behavior of every conforming implementation unchanged, even where the wording it corrects was normative.
 
 **Substantive changes** (new fields, changed semantics, new event types in the core spec): require a public RFC issue open for at least 14 days, with explicit approval from at least two maintainers and no unresolved objections from any maintainer.
+
+While fewer than two maintainers are listed in `.github/CODEOWNERS`, approval from every listed maintainer satisfies the approval threshold, provided the full 14-day RFC window has elapsed. The window is not waivable and is what substitutes for a second reviewer: it is the period in which anyone at all may object in public. This accommodation lapses automatically as soon as a second maintainer is listed, and it exists to keep the specification amendable at the project's current size rather than to lower the bar permanently.
 
 **Breaking changes** (changes that would invalidate prior-major-version-conformant passports): not permitted within a major version. Breaking changes ship in a new major version with a documented migration path and a per-version verification shim in the reference implementations (see [`docs/migrations/v1-to-v2.md`](docs/migrations/v1-to-v2.md) for the v1.x → v2.0 worked example).
 
