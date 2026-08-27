@@ -27,6 +27,9 @@ See [`contextpassport/conformance-tests`](https://github.com/contextpassport/con
 - **Core** — passes `vectors/required/`. Produces and verifies plain (unsigned) passports correctly.
 - **Signed** — Core plus `vectors/signed/`. Produces and verifies Ed25519-signed passports.
 - **Full** — Signed plus `vectors/recommended/`. Handles fork lineage, extensions, and long chains.
+  **Not currently claimable:** no recommended vectors are published yet, and the conformance
+  harness exits 1 on `--level full` rather than reporting a pass nobody has earned. Listed here
+  because it defines the target, not because any implementation can reach it today.
 
 An implementation is **Context Passport v2.0 Core conformant** if it:
 

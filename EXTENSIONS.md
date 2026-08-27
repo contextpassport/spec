@@ -5,9 +5,12 @@ Extensions allow implementations to add new event types and new fields without m
 ## How extensions work
 
 1. Pick a namespace prefix unique to your organization. Examples: `acme`, `bankco`, `fintechco`.
-2. Use that prefix on every custom event type or field name: `acme.payment_authorized`, `bankco.kyc_event`, `fintechco.position_opened`.
-3. Implementations that do not recognize the namespace MUST ignore the field or event without error. This is required for forward compatibility.
-4. Register the extension in this file via pull request so other implementers can discover and reuse it.
+2. Use that prefix on every custom field name and vendor extension: `bankco.kyc_reference`, `fintechco.position_id`. This is a MUST, and it is what makes rule 3 possible.
+3. Custom **event types** SHOULD carry the prefix too: `acme.payment_authorized`, `bankco.kyc_event`. It is a SHOULD rather than a MUST because an unrecognised event type is
+   already safe to skip, whereas an unrecognised bare field could collide with a core field
+   added in a later version. Event types must in all cases match the pattern in SPEC.md 3.3.
+4. Implementations that do not recognize the namespace MUST ignore the field or event without error. This is required for forward compatibility.
+5. Register the extension in this file via pull request so other implementers can discover and reuse it.
 
 ## Promotion to core
 
