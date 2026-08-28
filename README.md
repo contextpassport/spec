@@ -59,6 +59,7 @@ The goal: become the standard envelope format for AI agent events — a record a
 - [`proposals/`](proposals/) — draft proposals
   - [`context-passport-for-mcp.md`](proposals/context-passport-for-mcp.md) — MCP extension proposal
   - [`canonical-json-jcs.md`](proposals/canonical-json-jcs.md) — adopt RFC 8785 in v2.0 to close v1.x portability gaps
+  - [`in-toto-predicate.md`](proposals/in-toto-predicate.md) — an in-toto attestation predicate for AI agent decisions, drafted for submission upstream
 - [`EXTENSIONS.md`](EXTENSIONS.md) — vendor-namespaced extension registry
 - [`IMPLEMENTATIONS.md`](IMPLEMENTATIONS.md) — known implementations
 - [`CHANGELOG.md`](CHANGELOG.md) — what changed between specification versions
