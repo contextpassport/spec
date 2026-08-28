@@ -10,6 +10,8 @@ To add your implementation: open a pull request editing this file.
 |---|---|---|---|---|---|
 | `contextpassport/python` | Python | Apache-2.0 | github.com/contextpassport/python | v2.0 Core, Signed | Pure-Python, no required dependencies. Optional Ed25519 signing and LangGraph integration. v1.x records verifiable via `context_passport.compat.v1`. |
 | `contextpassport/typescript` | TypeScript | Apache-2.0 | github.com/contextpassport/typescript | v2.0 Core, Signed | TypeScript reference, ESM, no runtime dependencies. Ed25519 signing via Node `crypto`. v1.x records verifiable via `@contextpassport/core/compat/v1`. |
+| `@darkmatterhub/mcp-server` | TypeScript | Apache-2.0 | github.com/darkmatter-hub/mcp | v2.0 Core | MCP server emitting passports for AI agent tool calls. Uses `@contextpassport/core` directly rather than reimplementing the format. |
+| DarkMatter | JavaScript | Proprietary | darkmatterhub.ai | v2.0 Core | Hosted service. Passes the six `vectors/required/` vectors via its own runner over the published CC0 vectors. Signed is **not** claimed: it signs a proprietary L2/L3 envelope binding agent and key identity, not the envelope defined in SPEC.md 3.5. |
 
 ## Third-party implementations
 
