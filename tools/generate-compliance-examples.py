@@ -103,7 +103,7 @@ consent = pin(
     ctx_id="ctx_1774358400000_c0e5a1b2c3d4",
     timestamp="2026-03-29T09:55:00Z",
 )
-write("consent.json", consent)
+write("consent.passport.json", consent)
 
 
 # --------------------------------------------------------------- override
@@ -163,7 +163,7 @@ override_event = pin(
     timestamp="2026-03-29T10:02:00Z",
 )
 relink(override_event, override_decision)
-write("override.json", [override_decision, override_event])
+write("override.passports.json", [override_decision, override_event])
 
 
 # --------------------------------------------------------------- escalate
@@ -218,7 +218,7 @@ escalate_event = pin(
     timestamp="2026-03-29T11:01:00Z",
 )
 relink(escalate_event, escalate_assessment)
-write("escalate.json", [escalate_assessment, escalate_event])
+write("escalate.passports.json", [escalate_assessment, escalate_event])
 
 
 # ----------------------------------------------------------------- redact
@@ -253,7 +253,7 @@ redact = pin(
     ctx_id="ctx_1776950400000_dead0b05c3da",
     timestamp="2026-04-28T14:30:00Z",
 )
-write("redact.json", redact)
+write("redact.passport.json", redact)
 
 
 # ------------------------------------------------------------------ audit
@@ -299,6 +299,6 @@ audit = pin(
     ctx_id="ctx_1777593600000_a0d10c06e5f7",
     timestamp="2026-04-30T23:59:00Z",
 )
-write("audit.json", audit)
+write("audit.passport.json", audit)
 
 print("\nRun `npm test` to validate these against schema/v2.json.")
