@@ -1,0 +1,37 @@
+{
+  "title": "Context Passport: An Open Standard for Structured, Verifiable Records of AI Agent Events",
+  "description": "<p>Context Passport defines a minimal JSON envelope for structured, verifiable records of AI agent events.</p><p>Each record carries the input an agent was given, the output it produced, and an integrity block containing SHA-256 hashes computed over the RFC 8785 (JCS) canonical form of the payload. Records chain by hash, so altering any record breaks verification of every record after it. Verification requires only the records themselves: no server, no account, and no trust in whoever produced them.</p><p>The specification is CC0. Reference implementations in Python and TypeScript are Apache-2.0, and a conformance suite with CC0 test vectors decides whether an implementation conforms.</p>",
+  "upload_type": "publication",
+  "publication_type": "technicalnote",
+  "license": "cc-zero",
+  "access_right": "open",
+  "creators": [
+    {
+      "name": "Context Passport maintainers"
+    }
+  ],
+  "keywords": [
+    "AI agents",
+    "audit trail",
+    "provenance",
+    "tamper evidence",
+    "hash chain",
+    "RFC 8785",
+    "canonical JSON",
+    "AI governance",
+    "EU AI Act",
+    "interoperability"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/contextpassport/spec",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://datatracker.ietf.org/doc/html/rfc8785",
+      "relation": "cites",
+      "scheme": "url"
+    }
+  ]
+}
