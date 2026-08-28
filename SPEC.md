@@ -35,6 +35,7 @@ The goal of this specification is to become the standard interchange format for 
       - [Signature (optional)](#327-signature-optional)
    - [Event types](#33-event-types)
    - [Integrity computation](#34-integrity-computation)
+   - [File naming (non-normative)](#35-file-naming-non-normative)
 4. [Conformance](#4-conformance)
 5. [Security considerations](#5-security-considerations)
 6. [IANA considerations](#6-iana-considerations)
@@ -290,6 +291,32 @@ If any comparison fails, the chain is `broken` at that point.
 
 ---
 
+### 3.5 File naming (non-normative)
+
+Nothing in this specification requires a passport to be stored in a file at
+all. Section 2.2 holds: a passport is a JSON value, and a system that keeps
+records in a database, a message queue or a log stream is fully conformant
+without ever writing one to disk.
+
+Where records **are** written to files, implementations SHOULD use:
+
+| Contents | Name |
+|---|---|
+| A single passport | `<name>.passport.json` |
+| An array of passports forming a chain | `<name>.passports.json` |
+
+This exists so that editor tooling can recognise a passport without being
+configured to. A schema catalogue entry matching `*.passport.json` gives
+validation and completion in editors that consult it, with no setup by the
+person writing the file. A convention no more specific than `*.json` cannot do
+that, and one specific to a single vendor's tool would not deserve to.
+
+It is a SHOULD and carries no weight in verification. A file named anything at
+all, or nothing at all, verifies identically: the hashes cover the payload and
+the parent, never the filename.
+
+---
+
 ## 4. Conformance
 
 An implementation is **Context Passport v2.0 conformant** if it:
@@ -341,7 +368,23 @@ See `docs/throughput-and-trust.md` for the full taxonomy and recommended SDK pat
 
 ## 6. IANA considerations
 
-This specification does not require any IANA actions.
+A media type registration is intended in the **vendor tree**:
+
+    application/vnd.contextpassport+json
+
+The vendor tree is the correct tree while this specification is published only
+here. The standards tree (`application/contextpassport+json`) requires a
+permanent specification of the kind RFC 6838 describes, and claiming it without
+one would misrepresent the specification's standing.
+
+The `+json` structured syntax suffix is already registered; this registration
+adds no new suffix. Registration is a matter of discoverability and of settling
+whether the format is real for anyone reviewing it. It confers nothing on
+implementations and changes nothing in sections 3 or 4: a conformant
+implementation is conformant whether or not the media type is ever used.
+
+Until the registration completes, `application/json` remains correct for
+transporting passports.
 
 ---
 
