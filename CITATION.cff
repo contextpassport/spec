@@ -6,6 +6,7 @@ type: software
 license: CC0-1.0
 url: https://contextpassport.com
 repository-code: https://github.com/contextpassport/spec
+doi: 10.5281/zenodo.22153488
 authors:
   - name: "Context Passport maintainers"
 keywords:

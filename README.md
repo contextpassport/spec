@@ -4,6 +4,8 @@
 
 Version 2.0 · Spec: CC0 1.0 · Reference implementations: Apache-2.0
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22153488.svg)](https://doi.org/10.5281/zenodo.22153488)
+
 ---
 
 Context Passport is a minimal JSON schema for structured, verifiable records of AI agent events — decisions, handoffs, checkpoints, forks, audits, and consent. Model-agnostic. Framework-agnostic. Cryptographically verifiable.
@@ -96,6 +98,21 @@ Context Passport is a community-governed open standard. We are actively looking 
 Governance and decision-making are documented in [`GOVERNANCE.md`](GOVERNANCE.md). Code of conduct in [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). Security reports to `security@contextpassport.com` ([`SECURITY.md`](SECURITY.md)).
 
 ## License
+
+## Citing this specification
+
+Archived on Zenodo, so it can be cited in research, regulatory filings and
+standards work without depending on a branch URL that may move.
+
+**DOI: [10.5281/zenodo.22153488](https://doi.org/10.5281/zenodo.22153488)**
+
+That is the *concept* DOI: it always resolves to the newest published version.
+Cite it when you mean the specification. Each release also mints a version DOI
+pinned to one exact snapshot, listed on the Zenodo record, for when you need to
+name the version you actually implemented.
+
+The archive is CC0, like the specification. Nothing about citing it creates an
+obligation to anyone.
 
 The **specification** (SPEC.md, schema/, README.md content) is released under **CC0 1.0 Universal** — no rights reserved, public domain. Implement it, fork it, extend it. No attribution required.
 
