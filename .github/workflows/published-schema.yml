@@ -1,0 +1,28 @@
+name: Published schema
+
+# Watches the schema actually served at contextpassport.com, which SchemaStore
+# has pointed every VS Code, Visual Studio and JetBrains install at since
+# SchemaStore/schemastore#6264 merged on 28 August 2026.
+#
+# Deliberately not on push or pull_request. A pull request that edits
+# schema/v2.json would fail this check for the honest reason that the site has
+# not been redeployed yet, and a check that cries wolf on correct work is a
+# check people learn to ignore. The risk here is drift over time and the site
+# going down, neither of which is caused by a commit, so a daily schedule
+# catches it and a push trigger would not.
+
+on:
+  schedule:
+    - cron: '47 5 * * *'   # daily, 05:47 UTC
+  workflow_dispatch:
+
+jobs:
+  published-schema:
+    name: Served schema matches this repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+      - run: node tools/check-published-schema.mjs
