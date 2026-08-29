@@ -4,9 +4,16 @@ All notable changes to the Context Passport specification are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This file tracks the **specification**, not the reference SDKs, which version
-independently and keep their own changelogs. Dates are taken from the
-publication of the corresponding reference implementations, since the
-specification is not separately tagged.
+independently and keep their own changelogs. Entries dated before 2.0.1 take
+their date from the publication of the corresponding reference implementations,
+because the specification was not separately tagged until 2.0.1.
+
+A note on version numbers. The **specification** version is two-part and
+appears in every record's `schema_version` field: `1.0`, then `2.0`. Publication
+releases of this repository are three-part and add a patch component: `2.0.1` is
+the 2.0 specification, republished with better examples, tooling and prose. A
+patch release never changes a hashed byte, so a record written against `2.0`
+verifies identically under every `2.0.x` publication.
 
 A note on what counts as a breaking change here. This format exists so that a
 record written by one implementation verifies in another, years later. So the
@@ -15,6 +22,15 @@ list. A change that leaves every field intact but alters serialization is
 breaking, which is exactly what happened in 2.0.
 
 ## [Unreleased]
+
+Nothing yet.
+
+## [2.0.1] - 2026-08-28
+
+Specification 2.0 republished. No normative change: sections 3 and 4 are
+untouched, no hashed byte differs, and a record written against 2.0 verifies
+identically here. This is the first release of this repository to be tagged and
+archived, which is the reason it exists.
 
 ### Added
 
@@ -36,6 +52,13 @@ breaking, which is exactly what happened in 2.0.
   and a demonstrated tamper detection.
 - A weekly steward workflow that reports outside contributions left without a
   maintainer reply.
+- §3.5, a non-normative file naming convention: `<name>.passport.json` for a
+  single record and `<name>.passports.json` for a chain. It exists so editor
+  tooling can recognise a passport without being configured to, which a
+  convention no more specific than `*.json` cannot do. It carries no weight in
+  verification: the hashes cover the payload and the parent, never the filename.
+- `.zenodo.json`, so that a tagged release is archived with citable metadata
+  rather than whatever Zenodo infers from the repository.
 
 Nothing in this section changes the wire format. Records written against 2.0
 are unaffected.
@@ -54,6 +77,14 @@ are unaffected.
   without a namespace; custom fields and vendor extensions stay MUST (#38). Not
   breaking under this file's definition — no hashed bytes change and no
   previously conforming record becomes non-conforming.
+- §6 previously said this specification required no IANA action. It now states
+  the intended vendor-tree media type registration,
+  `application/vnd.contextpassport+json`. The vendor tree is the honest tree
+  while the specification is published only here; the standards tree asks for a
+  permanent specification this one cannot yet claim. Until registration
+  completes, `application/json` remains correct for transport.
+- The 17 published examples were renamed to the convention §3.5 recommends, and
+  `tools/generate-compliance-examples.py` now emits those names.
 - `GOVERNANCE.md`: the two-maintainer approval threshold for substantive changes
   is now satisfiable while the project has fewer than two maintainers, by
   approval from every listed maintainer plus the full 14-day RFC window. As
