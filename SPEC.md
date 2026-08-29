@@ -404,7 +404,15 @@ transporting passports.
 import json, hashlib, math, time, secrets
 
 def _normalize(value):
-    """JCS number normalization: reject non-finite, fold integer-valued floats to int."""
+    """JCS normalization: key order, non-finite rejection, integer-valued float folding.
+
+    Keys are ordered by UTF-16 code unit, per RFC 8785 3.2.3. Python's sorted()
+    and json.dumps(sort_keys=True) order by code point instead, which agrees
+    across the whole BMP and disagrees above it: U+1F600 encodes to the surrogate
+    pair D83D DE00, so it sorts below U+FF01 in UTF-16 and above it by code
+    point. A payload with an emoji key hashes differently under the two, so this
+    is not a detail an implementation can skip.
+    """
     if isinstance(value, bool) or value is None:
         return value
     if isinstance(value, float):
@@ -414,7 +422,10 @@ def _normalize(value):
             return 0
         return int(value) if value.is_integer() else value
     if isinstance(value, dict):
-        return {k: _normalize(v) for k, v in value.items()}
+        # Dicts preserve insertion order, so building in JCS order here means
+        # json.dumps can serialize with sort_keys=False and be correct.
+        return {k: _normalize(value[k])
+                for k in sorted(value, key=lambda s: s.encode("utf-16-be"))}
     if isinstance(value, (list, tuple)):
         return [_normalize(v) for v in value]
     return value  # int, str
@@ -427,8 +438,9 @@ def make_passport(agent_id, agent_name, payload, parent=None,
     hex_  = secrets.token_hex(6)
     ctx_id = f"ctx_{ts}_{hex_}"
 
-    # RFC 8785 (JCS) canonicalization: sorted keys, raw UTF-8, normalized numbers.
-    canonical  = json.dumps(_normalize(payload), sort_keys=True, ensure_ascii=False,
+    # RFC 8785 (JCS): keys already in UTF-16 order from _normalize, raw UTF-8,
+    # normalized numbers. sort_keys must stay False or Python re-sorts by code point.
+    canonical  = json.dumps(_normalize(payload), sort_keys=False, ensure_ascii=False,
                             separators=(',', ':'))
     pay_hash   = "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
@@ -484,7 +496,7 @@ def verify_chain(passports):
     """Returns True if chain is intact, False if any hash mismatch detected."""
     prev = None
     for p in passports:
-        canonical  = json.dumps(_normalize(p["payload"]), sort_keys=True,
+        canonical  = json.dumps(_normalize(p["payload"]), sort_keys=False,
                                 ensure_ascii=False, separators=(',', ':'))
         pay_hash   = "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
         parent_hash = prev["integrity"]["integrity_hash"] if prev else None
