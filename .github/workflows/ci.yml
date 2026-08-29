@@ -27,6 +27,11 @@ jobs:
           node-version: '20'
       - run: npm install --no-save ajv ajv-formats canonicalize
       - run: node tools/validate-examples.mjs
+      # server.js serves contextpassport.com. It previously joined the raw
+      # request path onto the site root with no containment check, which made
+      # every file the web process could read fetchable over HTTP. Checked here
+      # so it cannot come back quietly.
+      - run: node tools/check-server.mjs
 
   docs-and-examples:
     name: Documented code still runs

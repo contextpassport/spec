@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "start": "npx serve . --listen ${PORT:-3000} --no-clipboard",
-    "test": "node tools/validate-examples.mjs"
+    "test": "node tools/validate-examples.mjs && node tools/check-server.mjs"
   },
   "dependencies": {
     "serve": "^14.0.0"
