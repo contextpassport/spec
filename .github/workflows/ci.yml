@@ -21,8 +21,8 @@ jobs:
     name: Validate examples against schema
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
       - run: npm install --no-save ajv ajv-formats canonicalize
@@ -32,8 +32,8 @@ jobs:
     name: Documented code still runs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       # Offline mode needs no API key and makes no network call, so the
@@ -47,7 +47,7 @@ jobs:
       - run: python tools/check-quickstart.py
       # Same contract for the TypeScript quickstart: extract its blocks, run
       # them against the published SDK, assert the documented booleans.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
       - run: npm install --no-save @contextpassport/core@^2.0.0 tsx
