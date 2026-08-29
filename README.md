@@ -98,6 +98,6 @@ Governance and decision-making are documented in [`GOVERNANCE.md`](GOVERNANCE.md
 
 The **specification** (SPEC.md, schema/, README.md content) is released under **CC0 1.0 Universal** — no rights reserved, public domain. Implement it, fork it, extend it. No attribution required.
 
-The **reference implementations** (server.js, test.js, language-specific SDKs) are released under **Apache-2.0** — includes an explicit patent grant.
+The **reference implementations** are released under **Apache-2.0** — includes an explicit patent grant. They live in their own repositories: [`contextpassport/python`](https://github.com/contextpassport/python) and [`contextpassport/typescript`](https://github.com/contextpassport/typescript). The Apache-2.0 licence also covers the small amount of tooling in this repository (`server.js`, which serves contextpassport.com, and the scripts under `tools/`).
 
 See `LICENSE` (CC0) and `LICENSE-APACHE` (Apache-2.0).

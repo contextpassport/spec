@@ -13,6 +13,16 @@ To add your implementation: open a pull request editing this file.
 | `@darkmatterhub/mcp-server` | TypeScript | Apache-2.0 | github.com/darkmatter-hub/mcp | v2.0 Core | MCP server emitting passports for AI agent tool calls. Uses `@contextpassport/core` directly rather than reimplementing the format. |
 | DarkMatter | JavaScript | Proprietary | darkmatterhub.ai | v2.0 Core | Hosted service. Passes the six `vectors/required/` vectors via its own runner over the published CC0 vectors. Signed is **not** claimed: it signs a proprietary L2/L3 envelope binding agent and key identity, not the envelope defined in SPEC.md 3.5. |
 
+## Integration templates
+
+Runnable starting points. These are not implementations of the format: they use
+a reference SDK and make no independent conformance claim.
+
+| Name | Stack | What it records |
+|---|---|---|
+| [`verifiable-agent-template`](https://github.com/contextpassport/verifiable-agent-template) | LangGraph, Python | One record per agent step, signed, verifiable offline |
+| [`tinker-provenance`](https://github.com/contextpassport/tinker-provenance) | Tinker, Python | A fine-tuning run: dataset digest, hyperparameters, evaluation, safety retest after customisation, and deployment approval |
+
 ## Third-party implementations
 
 *None listed yet. Be the first.*

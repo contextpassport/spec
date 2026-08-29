@@ -11,11 +11,21 @@
  *
  * So this tracks signals that require a human to have done something:
  *
- *   records      someone committed a Context Passport record to a public repo,
- *                found by its $schema URL. This is the strongest signal there
- *                is, because a record only exists if the format was used.
+ *   records      someone committed a Context Passport record to a public repo.
+ *                The strongest signal there is, because a record only exists if
+ *                the format was used. Matched on the $schema URL AND
+ *                integrity_hash together: the URL alone also appears in schema
+ *                catalogues, and being listed in a catalogue is distribution,
+ *                not usage. That false positive was live for one run, caused by
+ *                our own SchemaStore entry being merged.
  *   python / ts  someone imported a reference SDK in a public repo.
  *   mcp          someone wired up the DarkMatter MCP tools.
+ *   tinker       someone recorded a fine-tuning run. The namespaced event type
+ *                is what makes this findable: a generic "commit" is
+ *                indistinguishable from every other passport in the world,
+ *                whereas "tinker.finetune_started" appears only where somebody
+ *                actually recorded one. This is the argument for namespacing
+ *                custom event types generally, not just here.
  *   forks/stars  weaker, but a fork is a deliberate act.
  *
  * State lives in .github/adoption.json, which deliberately carries no
@@ -41,10 +51,11 @@ const repo = process.env.REPO || 'contextpassport/spec';
 // `"schema_version": "2.0"` return thousands of unrelated files and are
 // useless as a tripwire.
 const CODE_QUERIES = {
-  records: '"contextpassport.com/schema"',
+  records: '"contextpassport.com/schema" "integrity_hash"',
   python: '"from context_passport import"',
   typescript: '"@contextpassport/core"',
   mcp: '"darkmatter_commit"',
+  tinker: '"tinker.finetune_started"',
 };
 
 function gh(args) {
