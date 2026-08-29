@@ -8,6 +8,14 @@ const port = process.env.PORT || 3000;
 // symlink, which would otherwise make every request look like an escape.
 const ROOT = fs.realpathSync(__dirname);
 
+// Paths inside the root that are still not part of the published site.
+//
+// Deliberately a narrow list rather than "reject anything starting with a dot".
+// The specification's own examples reference /.well-known/cp-revoked-keys.json
+// and /.well-known/did.json, so a blanket rule on dotfiles would block a path
+// this site has a stated reason to serve one day.
+const DENIED_SEGMENTS = new Set(['.git']);
+
 /**
  * Resolve a request path to a file inside ROOT, or null if it points outside.
  *
@@ -33,6 +41,15 @@ function resolveWithinRoot(urlPath) {
   // would otherwise take "/etc/passwd" as the final, absolute answer.
   const candidate = path.resolve(ROOT, '.' + decoded);
   if (candidate !== ROOT && !candidate.startsWith(ROOT + path.sep)) return null;
+
+  // Checked on the resolved path rather than on the request text, so that
+  // spellings like /foo/../.git/config are caught after normalization rather
+  // than being compared against as written.
+  const relative = path.relative(ROOT, candidate);
+  if (relative && relative.split(path.sep).some((segment) => DENIED_SEGMENTS.has(segment))) {
+    return null;
+  }
+
   return candidate;
 }
 

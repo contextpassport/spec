@@ -110,6 +110,36 @@ try {
     }
   }
 
+  // .git sits inside the root, so containment alone does not cover it. The
+  // Dockerfile is COPY . ., which means the deployed image carries the whole
+  // history unless something refuses to serve it.
+  const gitPaths = [
+    ['/.git/config', 'repositoryformatversion'],
+    ['/.git/HEAD', 'ref:'],
+    ['/foo/../.git/config', 'repositoryformatversion'],
+    ['/%2egit/config', 'repositoryformatversion'],
+  ];
+
+  for (const [target, leak] of gitPaths) {
+    const body = await rawRequest(target);
+    if (body.includes(leak)) {
+      fail(`served the git directory: ${target}`);
+    } else {
+      pass(`refused: ${target}`);
+    }
+  }
+
+  // The specification's examples reference /.well-known paths, so the rule
+  // above has to be narrower than "reject anything beginning with a dot".
+  // There is no .well-known directory yet; what matters is that the request
+  // reaches the normal miss path rather than being rejected out of hand.
+  const wellKnown = await rawRequest('/.well-known/did.json');
+  if (wellKnown.startsWith('HTTP/1.1 200') && wellKnown.includes('text/html')) {
+    pass('/.well-known is not blanket-denied');
+  } else {
+    fail('/.well-known was denied, which would block a documented path');
+  }
+
   // A file that exists in the repo but is not part of the published site is
   // still inside the root, so this is not a traversal case. It is here to
   // record that containment is the property being tested, not an allow-list.

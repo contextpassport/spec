@@ -1,0 +1,11 @@
+# The Dockerfile is `COPY . .`, so without this the image carries the whole
+# VCS history and it is reachable over HTTP from the site root. server.js also
+# refuses to serve .git, but keeping it out of the image is the better of the
+# two defences: what is not there cannot be served however the server changes.
+.git
+.github
+
+# Never part of the published site, and only ever arrive by accident.
+node_modules
+.env
+*.log
