@@ -26,8 +26,10 @@
  *                whereas "tinker.finetune_started" appears only where somebody
  *                actually recorded one. This is the argument for namespacing
  *                custom event types generally, not just here.
- *   forks_*/stars_* per repository. Weaker than a code hit, but a fork is a
- *                deliberate act and the repo prefix tells the owner which one moved.
+ *   forks_<repo>, stars_<repo>
+ *                per repository. Weaker than a code hit, but a fork is a
+ *                deliberate act, and the repo suffix tells the owner which one
+ *                moved.
  *
  * State lives in .github/adoption.json, which deliberately carries no
  * timestamp: it should change only when a signal changes, so its git history
