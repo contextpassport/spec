@@ -1,0 +1,75 @@
+name: Steward token probe
+
+# Throwaway diagnostic branch. Answers one question before #69 merges:
+# can the Actions GITHUB_TOKEN read issues, pull requests, comments and
+# reviews in the other Context Passport repositories? Delete this branch
+# and this file once the answer is recorded on the pull request.
+
+on:
+  push:
+    branches: [ci/steward-token-probe]
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+env:
+  GRACE_DAYS: '7'
+  REPOS: >-
+    contextpassport/spec
+    contextpassport/python
+    contextpassport/typescript
+    contextpassport/conformance-tests
+    contextpassport/verifiable-agent-template
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Raw cross-repo reads with github.token
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          for r in $REPOS; do
+            echo "=== $r ==="
+            gh issue list --repo "$r" --state open --limit 5 --json number,author >/dev/null 2>/tmp/e
+            echo "  issue list rc=$?"; sed 's/^/    /' /tmp/e
+            gh pr list --repo "$r" --state open --limit 5 --json number,author >/dev/null 2>/tmp/e
+            echo "  pr list    rc=$?"; sed 's/^/    /' /tmp/e
+            gh api "repos/$r" --jq '.forks_count' >/tmp/o 2>/tmp/e
+            echo "  repo api   rc=$? forks=$(cat /tmp/o)"; sed 's/^/    /' /tmp/e
+          done
+
+      - name: Comment and review reads on a sibling repo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          gh api repos/contextpassport/python/issues/16/comments --jq '.[].user.login'
+          echo "  comments rc=$?"
+          gh api repos/contextpassport/python/pulls/15/reviews --jq '.[].user.login'
+          echo "  reviews  rc=$?"
+
+      - name: The real steward check from this pull request
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          node .github/steward-check.mjs
+          echo "steward-check exit=$?"
+
+      - name: The real adoption check from this pull request
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          node .github/adoption-check.mjs
+          echo "adoption-check exit=$?"
+          echo "--- adoption.json after run ---"
+          cat .github/adoption.json
