@@ -33,6 +33,38 @@ jobs:
       # so it cannot come back quietly.
       - run: node tools/check-server.mjs
 
+  scripts:
+    name: Automation scripts parse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+      # Nothing in CI ever loaded .github/*.mjs, so a change that stopped one
+      # of them parsing went green three times in a row on #69. The Steward
+      # scripts only run on a schedule, where the first sign of trouble is a
+      # failure email a week later that reads like the adoption alert it was
+      # meant to send.
+      #
+      # This only proves the files parse. It does not prove they work, and it
+      # is not a substitute for running them. It is here because the specific
+      # way #69 broke, a `*/` inside a block comment closing it early, is
+      # invisible on review and free to catch.
+      # Check every file and report all failures, rather than stopping at the
+      # first one, so a run names everything that needs fixing.
+      - run: |
+          failed=0
+          for f in .github/*.mjs tools/*.mjs; do
+            if node --check "$f"; then
+              echo "ok    $f"
+            else
+              echo "FAIL  $f"
+              failed=1
+            fi
+          done
+          exit $failed
+
   docs-and-examples:
     name: Documented code still runs
     runs-on: ubuntu-latest
