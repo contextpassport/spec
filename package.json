@@ -9,8 +9,10 @@
     "serve": "^14.0.0"
   },
   "devDependencies": {
+    "@contextpassport/core": "^2.0.0",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
-    "canonicalize": "^2.0.0"
+    "canonicalize": "^2.0.0",
+    "tsx": "^4.0.0"
   }
 }

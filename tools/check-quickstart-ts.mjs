@@ -48,12 +48,27 @@ try {
 
 if (result.error) {
   console.error(String(result.error));
-  console.error("Is tsx installed? CI does: npm install --no-save @contextpassport/core@^2.0.0 tsx");
+  console.error("Is tsx installed? Run npm install, or: npm install --no-save @contextpassport/core@^2.0.0 tsx");
   process.exit(1);
 }
+// A missing tsx or SDK surfaces here rather than as result.error: node itself
+// launches fine and the child exits non-zero when it cannot resolve the
+// import. Blaming the document for that is wrong and sends the reader off to
+// debug prose that is not broken.
 if (result.status !== 0) {
+  const stderr = result.stderr ?? "";
+  const missing = stderr.match(/Cannot find package '([^']+)'/);
+  if (missing) {
+    console.error(stderr);
+    console.error(
+      `Cannot resolve '${missing[1]}', so the quickstart was never run. This is a ` +
+        `missing dependency here, not a problem with the document.`,
+    );
+    console.error("Run npm install, or: npm install --no-save @contextpassport/core@^2.0.0 tsx");
+    process.exit(1);
+  }
   console.log(result.stdout);
-  console.error(result.stderr);
+  console.error(stderr);
   console.error("docs/quickstart-typescript.md does not run as written");
   process.exit(1);
 }
