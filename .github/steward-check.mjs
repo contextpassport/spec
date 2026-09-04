@@ -26,6 +26,7 @@ const DEFAULT_REPOS = [
   'contextpassport/typescript',
   'contextpassport/conformance-tests',
   'contextpassport/verifiable-agent-template',
+  'contextpassport/tinker-provenance',
 ];
 
 const CODEOWNERS = '.github/CODEOWNERS';

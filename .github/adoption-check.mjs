@@ -53,6 +53,7 @@ const DEFAULT_REPOS = [
   'contextpassport/typescript',
   'contextpassport/conformance-tests',
   'contextpassport/verifiable-agent-template',
+  'contextpassport/tinker-provenance',
 ];
 const repos = (process.env.REPOS || process.env.REPO || DEFAULT_REPOS.join(' '))
   .split(/\s+/)
