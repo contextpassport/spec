@@ -237,6 +237,9 @@ starting with a letter, followed by lowercase letters, digits or underscores,
 joined by single dots. Implementations SHOULD additionally prefix custom types
 with a namespace: `myorg.custom_type`.
 
+Pattern evaluation follows Appendix B. In particular, `"commit\n"` MUST NOT
+match even though some regex dialects (notably Python `re.match`) accept it.
+
 ### 3.4 Integrity computation
 
 Implementations MUST compute the integrity block as follows:
@@ -321,7 +324,7 @@ the parent, never the filename.
 
 An implementation is **Context Passport v2.0 conformant** if it:
 
-1. Produces passports that validate against the JSON Schema at `schema/v2.json`.
+1. Produces passports that validate against the JSON Schema at `schema/v2.json`, including `pattern` constraints evaluated per Appendix B.
 2. Correctly computes the integrity block per section 3.4 using RFC 8785 (JCS).
 3. Correctly links parent commits via `parent_id`.
 4. Correctly verifies chains by recomputing hashes. For mixed-version chains, dispatches per-record on `schema_version` (v1.x records use the v1.x algorithm; v2.x records use JCS).
@@ -516,6 +519,13 @@ The machine-readable JSON Schemas are in this repository:
 
 - `schema/v2.json` — current specification (v2.0)
 - `schema/v1.json` — retained for verifying v1.x records via the compatibility shim
+
+Every `pattern` constraint in these schemas uses ECMA-262 regular expression
+syntax and semantics, per the JSON Schema specification. In particular `$`
+matches only at the end of the string, never before a trailing newline.
+Python's `re` module differs here, so implementations MUST NOT evaluate these
+patterns with `re.match` or `re.search`; `re.fullmatch` gives the correct
+result for the anchored patterns in these schemas.
 
 ---
 
