@@ -1,15 +1,16 @@
 name: Published schema
 
-# Watches the schema actually served at contextpassport.com, which SchemaStore
+# Watches the schemas actually served at contextpassport.com, which SchemaStore
 # has pointed every VS Code, Visual Studio and JetBrains install at since
-# SchemaStore/schemastore#6264 merged on 28 August 2026.
+# SchemaStore/schemastore#6264 merged on 28 August 2026 (singular *.passport.json,
+# and the chain schema for *.passports.json once that catalog entry lands).
 #
 # Deliberately not on push or pull_request. A pull request that edits
-# schema/v2.json would fail this check for the honest reason that the site has
-# not been redeployed yet, and a check that cries wolf on correct work is a
-# check people learn to ignore. The risk here is drift over time and the site
-# going down, neither of which is caused by a commit, so a daily schedule
-# catches it and a push trigger would not.
+# schema/v2.json or schema/v2-chain.json would fail this check for the honest
+# reason that the site has not been redeployed yet, and a check that cries wolf
+# on correct work is a check people learn to ignore. The risk here is drift over
+# time and the site going down, neither of which is caused by a commit, so a
+# daily schedule catches it and a push trigger would not.
 
 on:
   schedule:

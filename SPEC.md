@@ -514,7 +514,8 @@ def verify_chain(passports):
 
 The machine-readable JSON Schemas are in this repository:
 
-- `schema/v2.json` — current specification (v2.0)
+- `schema/v2.json` — current specification (v2.0), single record
+- `schema/v2-chain.json` — array of v2 records (the `*.passports.json` chain shape)
 - `schema/v1.json` — retained for verifying v1.x records via the compatibility shim
 
 ---

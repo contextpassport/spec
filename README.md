@@ -47,7 +47,8 @@ The goal: become the standard envelope format for AI agent events — a record a
 - [`docs/quickstart.md`](docs/quickstart.md) — five minutes from install to a verified chain
 - [`docs/quickstart-typescript.md`](docs/quickstart-typescript.md) — the same quickstart for the TypeScript SDK
 - [`SPEC.md`](SPEC.md) — full specification (v2.0)
-- [`schema/v2.json`](schema/v2.json) — machine-readable JSON Schema (v2.0)
+- [`schema/v2.json`](schema/v2.json) — machine-readable JSON Schema (v2.0, single record)
+- [`schema/v2-chain.json`](schema/v2-chain.json) — array of v2 records (`*.passports.json` chains)
 - [`schema/v1.json`](schema/v1.json) — machine-readable JSON Schema (v1.x, retained for compatibility)
 - [`docs/`](docs/) — non-normative design notes for implementers
   - [`throughput-and-trust.md`](docs/throughput-and-trust.md) — submission patterns, trust properties, SDK guidance

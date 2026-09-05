@@ -77,6 +77,13 @@ try {
     fail('did not serve /schema/v2.json');
   }
 
+  const chain = await rawRequest('/schema/v2-chain.json');
+  if (chain.startsWith('HTTP/1.1 200') && chain.includes('"$id"') && chain.includes('contextpassport.com/schema/v2-chain.json')) {
+    pass('serves /schema/v2-chain.json');
+  } else {
+    fail('did not serve /schema/v2-chain.json');
+  }
+
   const index = await rawRequest('/');
   if (index.startsWith('HTTP/1.1 200') && index.includes('text/html')) {
     pass('serves / as html');
