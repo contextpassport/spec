@@ -19,7 +19,18 @@
  *                not usage. That false positive was live for one run, caused by
  *                our own SchemaStore entry being merged.
  *   python / ts  someone imported a reference SDK in a public repo.
- *   mcp          someone wired up the DarkMatter MCP tools.
+ *   mcp          someone installed the DarkMatter MCP server, which emits
+ *                passports. This searched for "darkmatter_commit" until
+ *                2026-09-05, when it reported FIRST EXTERNAL USE DETECTED on
+ *                four hits in dadukhankevin/DarkMatter. All four were
+ *                "darkmatter_commitment", a different tool in an unrelated
+ *                p2p messaging project that shares the DarkMatter name and
+ *                uses "passport" for its own identity concept. That repo has
+ *                no reference to Context Passport at all. A tool name is not
+ *                ours to own; a package name is, so this now searches for the
+ *                package. The lesson is the rule already stated below: if a
+ *                stranger can trip a signal without using this format, the
+ *                signal is measuring something else.
  *   tinker       someone recorded a fine-tuning run. The namespaced event type
  *                is what makes this findable: a generic "commit" is
  *                indistinguishable from every other passport in the world,
@@ -66,7 +77,7 @@ const CODE_QUERIES = {
   records: '"contextpassport.com/schema" "integrity_hash"',
   python: '"from context_passport import"',
   typescript: '"@contextpassport/core"',
-  mcp: '"darkmatter_commit"',
+  mcp: '"@darkmatterhub/mcp-server"',
   tinker: '"tinker.finetune_started"',
 };
 
