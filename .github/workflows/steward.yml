@@ -23,11 +23,15 @@ name: Steward
 #    than silence.
 #
 #    SDK pull requests land in the other Context Passport repositories, not
-#    here. The contribution check therefore scans every repository listed in
-#    REPOS below. Those repositories are public; the Actions token is enough
-#    for issue, pull request, comment, and review reads. Maintainers are taken from
-#    .github/CODEOWNERS in the checkout, which GOVERNANCE.md names as the
-#    authoritative list.
+#    here. The contribution check therefore scans every repository in the
+#    DEFAULT_REPOS list carried by .github/steward-check.mjs and
+#    .github/adoption-check.mjs. That list is deliberately not duplicated here:
+#    a REPOS value set in this file silently overrides the scripts, and when the
+#    two disagree the workflow wins without saying so. REPOS remains supported
+#    for running either script by hand against a subset. Those repositories are
+#    public; the Actions token is enough for issue, pull request, comment, and
+#    review reads. Maintainers are taken from .github/CODEOWNERS in the
+#    checkout, which GOVERNANCE.md names as the authoritative list.
 #
 # 3. The automation does not switch itself off. GitHub disables scheduled
 #    workflows after 60 days without repository activity, and any quiet stretch
@@ -54,12 +58,6 @@ permissions:
 env:
   GRACE_DAYS: '7'
   HEARTBEAT_BRANCH: steward-heartbeat
-  REPOS: >-
-    contextpassport/spec
-    contextpassport/python
-    contextpassport/typescript
-    contextpassport/conformance-tests
-    contextpassport/verifiable-agent-template
 
 jobs:
   steward:
