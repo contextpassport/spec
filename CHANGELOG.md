@@ -30,6 +30,13 @@ breaking, which is exactly what happened in 2.0.
   installed by naming packages with `--no-save`, which reads nothing from the
   lockfile. Both jobs now run `npm ci`, so the lockfile is exercised on every
   run and the dependency list lives only in `package.json`.
+- The contribution check reported success while two outside pull requests sat
+  approved and unmerged for twelve and eight days (#85). It asked only whether
+  a maintainer had ever replied, so the first reply silenced an item for good.
+  It now reports three shapes separately: nobody answered, approved and never
+  merged, and answered then left. The decision logic moved to
+  `.github/steward-decide.mjs` and is covered by tests that need no network,
+  so a future change to it can be run rather than only reasoned about.
 
 ## [2.0.1] - 2026-08-28
 

@@ -1,14 +1,17 @@
 #!/usr/bin/env node
 /**
- * Fails when an outside contribution has been left without a maintainer reply.
+ * Fails when an outside contribution has been left to rot.
  *
  * Scans open issues and pull requests across the Context Passport repositories
- * (REPOS), then asks the API for each item's comments and — for pull requests
- * — reviews. An item counts as "awaiting reply" when:
+ * (REPOS), then asks the API for each item's comments, plus reviews on pull
+ * requests. The rules for what counts as neglected live in
+ * .github/steward-decide.mjs, away from the network, so they can be tested
+ * against fixed inputs rather than only reasoned about. This file is the
+ * fetching half and the reporting half; it holds no judgement of its own.
  *
- *   - it was opened by someone who is not a maintainer and not a bot, and
- *   - no maintainer has commented or submitted a review, and
- *   - it is older than GRACE_DAYS.
+ * Three shapes are reported separately, because they ask different things of
+ * the maintainer: nobody answered, somebody approved and never merged, or the
+ * thread was answered and then went still.
  *
  * Maintainers are read from .github/CODEOWNERS in the checkout, which
  * GOVERNANCE.md names as the authoritative list. The workflow passes
@@ -19,6 +22,8 @@
 
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+
+import { triage, CATEGORIES, HEADINGS, GUIDANCE } from './steward-decide.mjs';
 
 const DEFAULT_REPOS = [
   'contextpassport/spec',
@@ -64,17 +69,19 @@ try {
   process.exit(1);
 }
 
-const isBot = (login = '') =>
-  login.endsWith('[bot]') || /(^|-)(bot|dependabot|renovate)$/i.test(login);
-const isMaintainer = (login = '') => maintainers.includes(login.toLowerCase());
-
 function listOpen(repo, kind) {
-  const subcommand = kind === 'issue' ? 'issue' : 'pr';
+  const isPullRequest = kind !== 'issue';
+  const subcommand = isPullRequest ? 'pr' : 'issue';
+  // reviewDecision is what makes "approved and never merged" visible, and it
+  // exists only on pull requests.
+  const fields = isPullRequest
+    ? 'number,title,author,createdAt,updatedAt,url,reviewDecision'
+    : 'number,title,author,createdAt,updatedAt,url';
   const out = gh([
     subcommand, 'list', '--repo', repo, '--state', 'open', '--limit', '100',
-    '--json', 'number,title,author,createdAt,url',
+    '--json', fields,
   ]);
-  const label = kind === 'issue' ? 'issue' : 'pull request';
+  const label = isPullRequest ? 'pull request' : 'issue';
   return JSON.parse(out).map((item) => ({ ...item, repo, kind: label }));
 }
 
@@ -103,8 +110,6 @@ function responders(repo, number, isPullRequest) {
   return [...logins];
 }
 
-const ageDays = (iso) => (Date.now() - new Date(iso).getTime()) / 86400000;
-
 const items = [];
 for (const repo of repos) {
   try {
@@ -116,33 +121,35 @@ for (const repo of repos) {
   }
 }
 
-const waiting = [];
-for (const it of items) {
-  const author = it.author?.login || '';
-  if (isMaintainer(author) || isBot(author)) continue;
-
-  const age = ageDays(it.createdAt);
-  if (age < graceDays) continue;
-
-  const isPullRequest = it.kind === 'pull request';
-  const replied = responders(it.repo, it.number, isPullRequest).some(isMaintainer);
-  if (!replied) waiting.push({ ...it, author, age: Math.floor(age) });
-}
+const groups = triage(
+  items,
+  (item) => responders(item.repo, item.number, item.kind === 'pull request'),
+  { maintainers, graceDays, now: new Date() },
+);
 
 console.log(
   `Scanned ${items.length} open item(s) across ${repos.length} repo(s); maintainers (${CODEOWNERS}): ${maintainers.join(', ')}`,
 );
 
-if (waiting.length === 0) {
-  console.log('Nothing is waiting on a reply.');
+const total = CATEGORIES.reduce((n, c) => n + groups.get(c).length, 0);
+
+if (total === 0) {
+  console.log('Nothing is waiting on a reply, a merge, or a decision.');
   process.exit(0);
 }
 
-console.error(`\n${waiting.length} contribution(s) awaiting a maintainer reply:\n`);
-for (const w of waiting.sort((a, b) => b.age - a.age)) {
-  console.error(`  ${w.age}d  ${w.kind} ${w.repo}#${w.number} by ${w.author}`);
-  console.error(`       ${w.title}`);
-  console.error(`       ${w.url}\n`);
+console.error(`\n${total} contribution(s) need attention:\n`);
+for (const category of CATEGORIES) {
+  const list = groups.get(category);
+  if (list.length === 0) continue;
+  console.error(`${HEADINGS[category]} (${list.length})`);
+  console.error(`  ${GUIDANCE[category]}\n`);
+  for (const w of list) {
+    const idle = Math.floor(w.idle);
+    console.error(`  ${Math.floor(w.age)}d open, ${idle}d since activity  ${w.kind} ${w.repo}#${w.number} by ${w.author}`);
+    console.error(`       ${w.title}`);
+    console.error(`       ${w.url}\n`);
+  }
 }
 console.error('These are the only part of this project that decays from neglect.');
 process.exit(1);
