@@ -10,7 +10,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { classify, triage, isBot, CATEGORIES } from './steward-decide.mjs';
+import {
+  classify, triage, isBot, approversFromReviews, normalizeActivity, CATEGORIES,
+} from './steward-decide.mjs';
 
 const NOW = new Date('2026-09-12T12:00:00Z');
 const OPTS = { maintainers: ['bengunvl'], graceDays: 7, now: NOW };
@@ -158,4 +160,112 @@ test('a healthy set produces no findings at all', () => {
   ];
   const groups = triage(items, () => ['bengunvl'], OPTS);
   assert.equal(CATEGORIES.reduce((n, c) => n + groups.get(c).length, 0), 0);
+});
+
+
+// ---------------------------------------------------------------------------
+// Approval derived from reviews.
+//
+// reviewDecision is null wherever the base branch does not require review,
+// which is the case in every repository this check scans. These cover the rule
+// working off the reviews instead, which is the only reason it fires at all
+// here. See WHY_NOT_REVIEW_DECISION_ALONE in steward-decide.mjs.
+
+test('approversFromReviews takes the latest state per reviewer', () => {
+  assert.deepEqual(approversFromReviews([{ login: 'a', state: 'APPROVED' }]), ['a']);
+  // Approved, then withdrawn.
+  assert.deepEqual(
+    approversFromReviews([
+      { login: 'a', state: 'APPROVED' },
+      { login: 'a', state: 'CHANGES_REQUESTED' },
+    ]),
+    [],
+  );
+  // Withdrawn, then approved again. This is spec#70's real sequence.
+  assert.deepEqual(
+    approversFromReviews([
+      { login: 'a', state: 'APPROVED' },
+      { login: 'a', state: 'CHANGES_REQUESTED' },
+      { login: 'a', state: 'APPROVED' },
+    ]),
+    ['a'],
+  );
+});
+
+test('a COMMENTED review does not withdraw a standing approval', () => {
+  // The reviewer posting a status update is exactly what kept resetting
+  // updatedAt on spec#70, so it must not also clear the approval.
+  assert.deepEqual(
+    approversFromReviews([
+      { login: 'a', state: 'APPROVED' },
+      { login: 'a', state: 'COMMENTED' },
+      { login: 'a', state: 'COMMENTED' },
+    ]),
+    ['a'],
+  );
+});
+
+test('normalizeActivity accepts a bare login array', () => {
+  assert.deepEqual(normalizeActivity(['a']), { logins: ['a'], approvedBy: [] });
+  assert.deepEqual(normalizeActivity({ logins: ['a'], approvedBy: ['a'] }), {
+    logins: ['a'],
+    approvedBy: ['a'],
+  });
+  assert.deepEqual(normalizeActivity(undefined), { logins: [], approvedBy: [] });
+});
+
+// The regression that this second pass exists for.
+test('approved_unmerged fires on a standing approval when reviewDecision is null', () => {
+  // spec#70 as it actually stood on 19 September 2026: 19 days open, approval
+  // standing, updatedAt 4 days old because a maintainer comment reset it, and
+  // reviewDecision null because main requires 0 approving reviews.
+  const v = classify(
+    pr({ createdAt: daysAgo(19), updatedAt: daysAgo(4), reviewDecision: null }),
+    { logins: ['bengunvl'], approvedBy: ['bengunvl'] },
+    OPTS,
+  );
+  assert.equal(v.category, 'approved_unmerged');
+  assert.ok(v.idle < OPTS.graceDays, 'stalled would not have reached it either');
+});
+
+test('a reviewDecision-only rule would have missed that case', () => {
+  const item = pr({ createdAt: daysAgo(19), updatedAt: daysAgo(4), reviewDecision: null });
+  assert.notEqual(item.reviewDecision, 'APPROVED');
+});
+
+test('an approval from a non-maintainer does not count', () => {
+  const v = classify(
+    pr({ createdAt: daysAgo(19), updatedAt: daysAgo(4), reviewDecision: null }),
+    { logins: ['bengunvl'], approvedBy: ['some-passerby'] },
+    OPTS,
+  );
+  assert.equal(v, null, 'only a maintainer approval means the merge is ours to make');
+});
+
+test('an approval withdrawn by a later change request is not approved_unmerged', () => {
+  const reviews = [
+    { login: 'bengunvl', state: 'APPROVED' },
+    { login: 'bengunvl', state: 'CHANGES_REQUESTED' },
+  ];
+  const v = classify(
+    pr({ createdAt: daysAgo(19), updatedAt: daysAgo(4), reviewDecision: null }),
+    { logins: ['bengunvl'], approvedBy: approversFromReviews(reviews) },
+    OPTS,
+  );
+  assert.equal(v, null);
+});
+
+test('triage still works when the lookup returns the richer activity shape', () => {
+  const items = [
+    pr({ number: 70, createdAt: daysAgo(19), updatedAt: daysAgo(4), reviewDecision: null }),
+    pr({ number: 74, createdAt: daysAgo(15), updatedAt: daysAgo(4), reviewDecision: null }),
+  ];
+  const groups = triage(
+    items,
+    () => ({ logins: ['bengunvl'], approvedBy: ['bengunvl'] }),
+    OPTS,
+  );
+  assert.deepEqual(groups.get('approved_unmerged').map((i) => i.number), [70, 74]);
+  assert.deepEqual(groups.get('unanswered'), []);
+  assert.deepEqual(groups.get('stalled'), []);
 });

@@ -23,7 +23,9 @@
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
-import { triage, CATEGORIES, HEADINGS, GUIDANCE } from './steward-decide.mjs';
+import {
+  triage, approversFromReviews, CATEGORIES, HEADINGS, GUIDANCE,
+} from './steward-decide.mjs';
 
 const DEFAULT_REPOS = [
   'contextpassport/spec',
@@ -72,8 +74,10 @@ try {
 function listOpen(repo, kind) {
   const isPullRequest = kind !== 'issue';
   const subcommand = isPullRequest ? 'pr' : 'issue';
-  // reviewDecision is what makes "approved and never merged" visible, and it
-  // exists only on pull requests.
+  // reviewDecision exists only on pull requests, and is null wherever the base
+  // branch does not require review, which is the case across these
+  // repositories. It is still requested because it is correct when populated,
+  // but approval is derived from the reviews themselves in responders().
   const fields = isPullRequest
     ? 'number,title,author,createdAt,updatedAt,url,reviewDecision'
     : 'number,title,author,createdAt,updatedAt,url';
@@ -87,6 +91,7 @@ function listOpen(repo, kind) {
 
 function responders(repo, number, isPullRequest) {
   const logins = new Set();
+  let approvedBy = [];
   try {
     const comments = gh([
       'api', '--paginate', `repos/${repo}/issues/${number}/comments`,
@@ -98,16 +103,27 @@ function responders(repo, number, isPullRequest) {
   }
   if (isPullRequest) {
     try {
+      // login and state together: the state is what tells an approval that is
+      // still standing from one that a later review withdrew. The API returns
+      // reviews chronologically, which approversFromReviews relies on.
       const reviews = gh([
         'api', '--paginate', `repos/${repo}/pulls/${number}/reviews`,
-        '--jq', '.[].user.login',
+        '--jq', '.[] | [.user.login, .state] | @tsv',
       ]);
-      reviews.split('\n').filter(Boolean).forEach((login) => logins.add(login));
+      const parsed = reviews
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => {
+          const [login, state] = line.split('\t');
+          return { login, state };
+        });
+      parsed.forEach(({ login }) => logins.add(login));
+      approvedBy = approversFromReviews(parsed);
     } catch {
       // Same as above.
     }
   }
-  return [...logins];
+  return { logins: [...logins], approvedBy };
 }
 
 const items = [];

@@ -34,9 +34,13 @@ breaking, which is exactly what happened in 2.0.
   approved and unmerged for twelve and eight days (#85). It asked only whether
   a maintainer had ever replied, so the first reply silenced an item for good.
   It now reports three shapes separately: nobody answered, approved and never
-  merged, and answered then left. The decision logic moved to
-  `.github/steward-decide.mjs` and is covered by tests that need no network,
-  so a future change to it can be run rather than only reasoned about.
+  merged, and answered then left. Approval is read from the reviews themselves
+  rather than from `reviewDecision`, which GitHub leaves null wherever the base
+  branch does not require review, as `main` does not here; keying on it would
+  have left the check reporting the two pull requests it was written to catch
+  as healthy. The decision logic moved to `.github/steward-decide.mjs` and is
+  covered by tests that need no network, so a future change to it can be run
+  rather than only reasoned about.
 
 ## [2.0.1] - 2026-08-28
 
