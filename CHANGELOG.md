@@ -30,6 +30,13 @@ breaking, which is exactly what happened in 2.0.
   installed by naming packages with `--no-save`, which reads nothing from the
   lockfile. Both jobs now run `npm ci`, so the lockfile is exercised on every
   run and the dependency list lives only in `package.json`.
+- The adoption check alarmed four times on repositories that had never used
+  this format (#67, #76, #87). Every one was a registry mirror or a security
+  scanner that indexes npm, tripped by the `mcp` signal, which searched for a
+  third party package name rather than for anything belonging to this project.
+  That signal is removed. The four that remain each match text that exists
+  only where somebody used Context Passport, and the rule they follow is now
+  stated in the file so a fifth proxy signal does not get added later.
 
 ## [2.0.1] - 2026-08-28
 
