@@ -23,6 +23,13 @@ breaking, which is exactly what happened in 2.0.
 
 ## [Unreleased]
 
+### Added
+
+- `schema/v2-chain.json`: JSON Schema for an array of one or more v2 records,
+  so SchemaStore (and editors that consult it) can validate `*.passports.json`
+  chain files the same way `*.passport.json` already maps to `schema/v2.json`
+  (#66). Shape only — linkage still needs a hash walk.
+
 ### Changed
 
 - SPEC.md: `pattern` constraints in JSON Schema files are now explicitly

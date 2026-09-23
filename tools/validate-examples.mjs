@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
- * Validates every file in examples/ against schema/v2.json, and, more
- * importantly, recomputes the integrity block from the payload rather than
- * trusting the hashes that are written in the file.
+ * Validates every file in examples/ against schema/v2.json (and chain files
+ * against schema/v2-chain.json), and, more importantly, recomputes the
+ * integrity block from the payload rather than trusting the hashes that are
+ * written in the file.
  *
  * Shape validation alone is close to worthless for this spec. A record can
  * satisfy every constraint in the JSON Schema (all fields present, every hash
@@ -20,6 +21,10 @@
  * and for array examples, walks the chain checking that each parent_hash is
  * the previous record's integrity_hash.
  *
+ * The chain schema is preloaded with the local record schema so Ajv resolves
+ * the published $ref without a network fetch. CI stays hermetic; online
+ * editors still fetch https://contextpassport.com/schema/v2.json.
+ *
  * Run: node tools/validate-examples.mjs
  */
 
@@ -35,9 +40,12 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const sha256 = (s) => createHash('sha256').update(s, 'utf8').digest('hex');
 
 const schema = JSON.parse(readFileSync(join(root, 'schema/v2.json'), 'utf8'));
+const chainSchema = JSON.parse(readFileSync(join(root, 'schema/v2-chain.json'), 'utf8'));
 const ajv = new Ajv({ allErrors: true, strict: false });
 addFormats(ajv);
+ajv.addSchema(schema);
 const validate = ajv.compile(schema);
+const validateChain = ajv.compile(chainSchema);
 
 let failures = 0;
 const fail = (file, msg) => { failures++; console.error(`  FAIL  ${file}: ${msg}`); };
@@ -81,12 +89,22 @@ if (files.length === 0) {
   process.exit(1);
 }
 
-console.log(`\n  Context Passport, validating ${files.length} example file(s) against schema/v2.json\n`);
+console.log(`\n  Context Passport, validating ${files.length} example file(s) against schema/v2.json and schema/v2-chain.json\n`);
+
+let chainCount = 0;
+let recordCount = 0;
 
 for (const f of files) {
   const raw = JSON.parse(readFileSync(join(root, 'examples', f), 'utf8'));
 
   if (Array.isArray(raw)) {
+    chainCount++;
+    if (!validateChain(raw)) {
+      for (const e of validateChain.errors) {
+        fail(f, `chain schema: ${e.instancePath || '/'} ${e.message}`);
+      }
+    }
+
     let prev = null;
     raw.forEach((rec, i) => {
       const ok = checkRecord(f, rec, `${i}`);
@@ -104,13 +122,27 @@ for (const f of files) {
     });
     console.log(`  checked  ${f}  (chain of ${raw.length})`);
   } else {
+    recordCount++;
+    // A lone object must not satisfy the chain schema. Asserting that keeps
+    // the two file shapes distinct for SchemaStore consumers.
+    if (validateChain(raw)) {
+      fail(f, 'lone record unexpectedly validates against schema/v2-chain.json');
+    }
+
     checkRecord(f, raw, null);
     console.log(`  checked  ${f}`);
   }
+}
+
+if (chainCount === 0) {
+  fail('(suite)', 'no *.passports.json chain examples found to exercise schema/v2-chain.json');
+}
+if (recordCount === 0) {
+  fail('(suite)', 'no *.passport.json record examples found');
 }
 
 if (failures) {
   console.error(`\n  ${failures} problem(s) found.\n`);
   process.exit(1);
 }
-console.log('\n  All examples valid: schema, recomputed hashes, and chain linkage.\n');
+console.log(`\n  All examples valid: schema, chain schema (${chainCount} accepted, ${recordCount} rejected), recomputed hashes, and chain linkage.\n`);
