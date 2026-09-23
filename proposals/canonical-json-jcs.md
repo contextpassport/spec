@@ -74,7 +74,7 @@ Per the migration-and-versioning playbook, v2.0 adoption uses **chain reset** at
 - [ ] Polyglot conformance harness shows 0 failures
 - [ ] `context_passport.compat.v1` (Python) and equivalent TypeScript module translate v1.x records to v2.0 for cross-version verification
 - [ ] Migration guide in `docs/migrations/v1-to-v2.md` with copy-paste operator playbook
-- [ ] Reference verifier in [`darkmatter-hub/darkmatter`](https://github.com/darkmatter-hub/darkmatter) and other downstream implementations updated to v2.0
+- [ ] Downstream implementations updated to v2.0
 
 ## Costs
 
