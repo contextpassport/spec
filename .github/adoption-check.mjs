@@ -19,18 +19,6 @@
  *                not usage. That false positive was live for one run, caused by
  *                our own SchemaStore entry being merged.
  *   python / ts  someone imported a reference SDK in a public repo.
- *   mcp          someone installed the DarkMatter MCP server, which emits
- *                passports. This searched for "darkmatter_commit" until
- *                2026-09-05, when it reported FIRST EXTERNAL USE DETECTED on
- *                four hits in dadukhankevin/DarkMatter. All four were
- *                "darkmatter_commitment", a different tool in an unrelated
- *                p2p messaging project that shares the DarkMatter name and
- *                uses "passport" for its own identity concept. That repo has
- *                no reference to Context Passport at all. A tool name is not
- *                ours to own; a package name is, so this now searches for the
- *                package. The lesson is the rule already stated below: if a
- *                stranger can trip a signal without using this format, the
- *                signal is measuring something else.
  *   tinker       someone recorded a fine-tuning run. The namespaced event type
  *                is what makes this findable: a generic "commit" is
  *                indistinguishable from every other passport in the world,
@@ -40,6 +28,31 @@
  *   forks_<repo>, stars_<repo>
  *                per repository. Weaker than a code hit, but a fork is a
  *                deliberate act and the repo prefix tells the owner which one moved.
+ *
+ * Every code query above matches text that exists only because somebody used
+ * Context Passport: the schema URL, an SDK import path, a namespaced event
+ * type. That is not a stylistic preference, it is the one rule this file has:
+ *
+ *   If a stranger can trip a signal without using this format, the signal is
+ *   measuring something else.
+ *
+ * A fifth query, `mcp`, was removed on 2026-09-23 for breaking it four times
+ * (#67, #76, #87). It searched for a third party package that emits passports,
+ * first by tool name and then by package name, and so matched any repository
+ * that indexes npm or the MCP registry. Every one of its hits was a registry
+ * mirror or a security scanner; it produced four false positives and no true
+ * ones, and the population able to trip it was growing while the population of
+ * actual users stayed at zero. Narrowing the query never helped, because
+ * precision was not the broken part: the signal was one step removed from the
+ * thing being measured even when it was right. Somebody installing a server
+ * that can emit passports is not somebody who used the format, and if they
+ * then use it, `records` catches them directly, because the record carries the
+ * schema URL.
+ *
+ * So: do not add a signal that matches somebody else's name. A tripwire whose
+ * false positive rate rises over time will be ignored before it is ever right,
+ * and the alert this file exists to deliver is one that must be read the first
+ * time it fires.
  *
  * State lives in .github/adoption.json, which deliberately carries no
  * timestamp: it should change only when a signal changes, so its git history
@@ -72,12 +85,12 @@ const repos = (process.env.REPOS || process.env.REPO || DEFAULT_REPOS.join(' '))
 
 // Queries chosen to be specific enough that a hit is real. Broad ones like
 // `"schema_version": "2.0"` return thousands of unrelated files and are
-// useless as a tripwire.
+// useless as a tripwire. Each of these matches text that only appears where
+// somebody used this format; see the rule in the header before adding one.
 const CODE_QUERIES = {
   records: '"contextpassport.com/schema" "integrity_hash"',
   python: '"from context_passport import"',
   typescript: '"@contextpassport/core"',
-  mcp: '"@darkmatterhub/mcp-server"',
   tinker: '"tinker.finetune_started"',
 };
 
