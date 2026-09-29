@@ -64,6 +64,21 @@ breaking, which is exactly what happened in 2.0.
   as healthy. The decision logic moved to `.github/steward-decide.mjs` and is
   covered by tests that need no network, so a future change to it can be run
   rather than only reasoned about.
+- The adoption check could report a clean run having measured nothing (#89). Code
+  search is rate limited per token rather than per workflow, so a run could
+  arrive at a window another job had already spent; a rate-limited query was
+  then reported by being left out of the report entirely. One run had all four
+  code queries fail, printed a complete-looking list of forks and stars, said
+  `No change.` and exited 0. A reader could only have caught it by counting the
+  lines they expected against the lines that were there. A failed query is now
+  retried once after the back off GitHub names, which was measured as enough to
+  clear it; a query that still fails is printed as `unknown` with its last known
+  value, and a run with any gap in it no longer says `No change.` The waiting is
+  bounded per query and per run so a long back off cannot stretch the job.
+  Baselines are still never overwritten by a failed query, and a rate limit
+  still does not fail the run: it is not adoption news. The report and back off
+  logic moved to `.github/adoption-decide.mjs` and is covered by tests that need
+  no network.
 
 ## [2.0.1] - 2026-08-28
 

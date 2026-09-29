@@ -65,12 +65,46 @@
  * and it should not arrive as a line in a log nobody reads.
  *
  * Falling counts are recorded but never alarm. A deleted repo is not news.
+ *
+ * A signal that could not be measured is not the same as a signal that is
+ * zero, and the run must never let the two look alike. Code search is limited
+ * per token rather than per workflow, so a run can arrive at a window another
+ * job already spent; when that happens the query is retried once after the
+ * back off GitHub names, and if it still fails the signal is reported as
+ * `unknown` and named in the summary. The bare "No change." is reserved for a
+ * run that actually looked at everything. Before this, four rate-limited
+ * searches were reported by being left out of the report, so a run that
+ * evaluated no code query at all printed a complete-looking list and exited 0
+ * (#89).
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
+import { parseBackoffSeconds, reportLines, noChangeLines } from './adoption-decide.mjs';
+
 const STATE = '.github/adoption.json';
+
+// How long a single rate-limited query may wait for the window GitHub asks
+// for, and how much waiting the whole run may do. 583s is the longest back off
+// observed in the wild (#89), so a single wait is allowed a little more than
+// that and no more. The total budget matters because the quota is per token and
+// shared: if four queries are all told to wait ten minutes, the fix for the
+// first wait is usually the fix for all four, and a run that sat through each
+// of them in turn would be worse than the gap it was closing.
+//
+// Overridable the same way REPOS is, so the waiting can be exercised by hand
+// without sitting through eleven minutes of it. A junk value falls back to the
+// default rather than becoming NaN, which would compare false against every
+// limit and so quietly remove the cap it was setting.
+const seconds = (value, fallback) => {
+  if (value == null || String(value).trim() === '') return fallback;
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
+};
+const MAX_BACKOFF_SECONDS = seconds(process.env.MAX_BACKOFF_SECONDS, 660);
+const MAX_TOTAL_BACKOFF_SECONDS = seconds(process.env.MAX_TOTAL_BACKOFF_SECONDS, 900);
+let backoffSpent = 0;
 const DEFAULT_REPOS = [
   'contextpassport/spec',
   'contextpassport/python',
@@ -98,14 +132,61 @@ function gh(args) {
   return execFileSync('gh', args, { encoding: 'utf8' });
 }
 
-function codeSearchCount(query) {
+// Everything gh said when it failed. The 429 back off is on stderr, not in
+// the Error message, so a message-only read finds nothing to wait for.
+function ghErrorText(e) {
+  return [e?.stderr, e?.stdout, e?.message]
+    .map((part) => (part == null ? '' : String(part)))
+    .join('\n');
+}
+
+/**
+ * Count matches for one code query, retrying once if GitHub rate limits us.
+ *
+ * The retry is the point. Code search is limited per token, not per workflow,
+ * so a shared runner can arrive at a window that is already spent, and the
+ * back off GitHub then advertises (583s in #89) is far longer than anything
+ * the 7s spacing between calls can absorb. Spacing calls within a run cannot
+ * open a window that is closed for reasons outside the run; waiting for the
+ * window it names can, and a re-dispatch two minutes later was measured as
+ * enough.
+ *
+ * Returns null when the count could not be established, which the caller
+ * records as unmeasured. Still null rather than 0: a transient API problem
+ * must never read as adoption vanishing.
+ */
+function codeSearchCount(query, name) {
+  const attempt = () =>
+    Number(
+      gh(['api', '-X', 'GET', 'search/code', '--raw-field', `q=${query}`, '--jq', '.total_count']).trim(),
+    );
   try {
-    const out = gh(['api', '-X', 'GET', 'search/code', '--raw-field', `q=${query}`, '--jq', '.total_count']);
-    return Number(out.trim());
+    return attempt();
   } catch (e) {
-    // A failed search must not read as zero, or a transient API problem would
-    // silently look like adoption vanishing.
-    return null;
+    const wait = parseBackoffSeconds(ghErrorText(e));
+    if (wait === null) {
+      console.error(`  ${name}: search failed, and GitHub named no retry delay`);
+      return null;
+    }
+    if (wait > MAX_BACKOFF_SECONDS) {
+      console.error(`  ${name}: rate limited for ${wait}s, longer than this run will wait`);
+      return null;
+    }
+    if (backoffSpent + wait > MAX_TOTAL_BACKOFF_SECONDS) {
+      console.error(`  ${name}: rate limited for ${wait}s, and this run has waited enough already`);
+      return null;
+    }
+    console.error(`  ${name}: rate limited, waiting the ${wait}s GitHub asked for, then retrying once`);
+    backoffSpent += wait;
+    pause((wait + 1) * 1000);
+    try {
+      const count = attempt();
+      console.error(`  ${name}: retry succeeded`);
+      return count;
+    } catch (retryErr) {
+      console.error(`  ${name}: retry failed too: ${ghErrorText(retryErr).trim().split('\n')[0]}`);
+      return null;
+    }
   }
 }
 
@@ -141,6 +222,11 @@ function repoStats() {
 
 const current = {};
 const foundIn = {};
+// Signals whose query could not be evaluated. Tracked so the report can say
+// so. Before #89 the only record of a skip was a console.log in the middle of
+// a run judged by its exit code, and a skipped signal then vanished from the
+// report rather than appearing as a gap in it.
+const skipped = [];
 
 const pause = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
@@ -148,10 +234,14 @@ for (const [name, query] of Object.entries(CODE_QUERIES)) {
   // GitHub's code search API allows roughly 10 requests a minute. A weekly
   // run is nowhere near that, but spacing the calls keeps a manual re-run
   // from 403ing, which would otherwise look like every signal going quiet.
+  //
+  // This spacing is not what protects against a 429. The quota is per token
+  // and already partly spent when the job starts; see codeSearchCount.
   pause(7000);
-  const count = codeSearchCount(query);
+  const count = codeSearchCount(query, name);
   if (count === null) {
-    console.log(`  ${name}: search failed, skipping this run`);
+    console.error(`  ${name}: not measured this run`);
+    skipped.push(name);
     continue;
   }
   current[name] = count;
@@ -165,12 +255,14 @@ const before = previous.signals || {};
 
 // ----------------------------------------------------------------- report
 
+// Report every signal that was supposed to be measured, including the ones
+// that were not. Iterating `current` alone is what made a run covering only
+// forks and stars print as a complete list (#89): a skipped signal was not
+// shown as unknown, it was absent, and absence looks like nothing to see.
+const names = [...Object.keys(CODE_QUERIES), ...Object.keys(current).filter((k) => !(k in CODE_QUERIES))];
+
 console.log('\nAdoption signals\n');
-for (const [k, v] of Object.entries(current)) {
-  const was = before[k];
-  const delta = was === undefined ? '' : v > was ? `  (up from ${was})` : v < was ? `  (down from ${was})` : '';
-  console.log(`  ${k.padEnd(12)} ${String(v).padStart(5)}${delta}`);
-}
+for (const line of reportLines({ names, current, before, skipped })) console.log(line);
 
 const risen = Object.entries(current).filter(([k, v]) => before[k] !== undefined && v > before[k]);
 const firstEver = Object.entries(current).filter(
@@ -189,7 +281,11 @@ writeFileSync(
 );
 
 if (firstEver.length === 0 && risen.length === 0) {
-  console.log('\nNo change.\n');
+  const { lines, complete } = noChangeLines(skipped);
+  // A run that measured everything says so on stdout. A run with a gap in it
+  // says that on stderr, so it survives into the step summary a reader
+  // actually sees rather than sitting in the middle of the log.
+  for (const line of lines) (complete ? console.log : console.error)(line);
   process.exit(0);
 }
 
