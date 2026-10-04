@@ -38,7 +38,21 @@ with tempfile.TemporaryDirectory() as tmp:
     path.write_text(script, encoding="utf-8")
     result = subprocess.run([sys.executable, str(path)], capture_output=True, text=True)
 
+# A missing context_passport surfaces here rather than as a launch failure:
+# the interpreter starts fine and the child exits non-zero when it cannot
+# import the SDK. Blaming the document for that is wrong and sends the reader
+# off to debug prose that is not broken. The TypeScript checker separates the
+# same two cases, and this one read as a document failure until it did too.
 if result.returncode != 0:
+    missing = re.search(r"ModuleNotFoundError: No module named '([^']+)'", result.stderr)
+    if missing:
+        print(result.stdout)
+        print(result.stderr, file=sys.stderr)
+        sys.exit(
+            f"Cannot import '{missing.group(1)}', so the quickstart was never run. "
+            f"This is a missing dependency here, not a problem with the document.\n"
+            f"Run: pip install context-passport"
+        )
     print(result.stdout)
     print(result.stderr, file=sys.stderr)
     sys.exit("docs/quickstart.md does not run as written")
