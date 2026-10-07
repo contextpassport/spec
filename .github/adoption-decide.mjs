@@ -86,3 +86,76 @@ export function noChangeLines(skipped = []) {
     ],
   };
 }
+
+/**
+ * Whether to take a second pass over the signals the first pass could not
+ * measure, and how long to settle first.
+ *
+ * The first pass already retries a rate-limited query in place, after the back
+ * off GitHub names. That retry cannot absorb what GitHub is actually naming:
+ * the waits observed in the wild are 583s (#89) and 735s (#95), and both are
+ * at or beyond the cap a single query is allowed to wait. So the in-place
+ * retry declines, and the signal is reported unknown.
+ *
+ * What did work, twice, was coming back a couple of minutes later: the manual
+ * re-dispatch in #95 read three of the four signals the scheduled run could
+ * not. That is the whole basis for this. The quota is per token and partly
+ * spent when the job starts, so the window reopens on its own clock rather
+ * than on the one the 429 advertises, and the advertised figure is the worst
+ * case rather than the wait that is actually needed.
+ *
+ * A second pass is therefore cheap in the only way that matters: it costs a
+ * fixed settle plus one call per unmeasured signal, and it is the difference
+ * between a weekly tripwire that reads `records` and one that does not.
+ *
+ * It declines in two cases, both so that waiting cannot pile onto waiting:
+ *
+ *   nothing skipped  the first pass measured everything, so there is nothing
+ *                    to come back for.
+ *   budget spent     the first pass already sat through its total back off
+ *                    allowance. A run that has waited fifteen minutes is in a
+ *                    quota window that a further minute will not reopen, and
+ *                    sitting there longer is worse than the gap it closes.
+ *
+ * Returns the signals to retry, in the order they were skipped, and the
+ * seconds to wait before starting. Deciding this here rather than inline is
+ * the same split the rest of this file exists for: the rule is testable, the
+ * sleeping and the searching are not.
+ */
+export function planSecondPass({
+  skipped = [],
+  backoffSpent = 0,
+  maxTotalBackoffSeconds = Infinity,
+  settleSeconds = 60,
+} = {}) {
+  if (skipped.length === 0) {
+    return { retry: [], waitSeconds: 0, reason: 'everything was measured on the first pass' };
+  }
+  if (backoffSpent >= maxTotalBackoffSeconds) {
+    return {
+      retry: [],
+      waitSeconds: 0,
+      reason: `this run already spent its ${maxTotalBackoffSeconds}s of waiting`,
+    };
+  }
+  return {
+    retry: [...skipped],
+    waitSeconds: settleSeconds,
+    reason: `${skipped.length} signal(s) went unmeasured`,
+  };
+}
+
+/**
+ * The signals still unmeasured after a second pass.
+ *
+ * Trivial on its own, and here on purpose. #89 was not a failure to retry, it
+ * was a failure to carry the skip list into the report truthfully, and a
+ * second pass that recovered a signal without taking it off this list would
+ * reproduce that bug from the other side: the run would hold a real count and
+ * still print `unknown` over it. Order is preserved so the summary names the
+ * remaining gaps the way the run met them.
+ */
+export function remainingSkipped(skipped = [], recovered = []) {
+  const done = new Set(recovered);
+  return skipped.filter((name) => !done.has(name));
+}

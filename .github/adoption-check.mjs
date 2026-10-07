@@ -76,12 +76,30 @@
  * searches were reported by being left out of the report, so a run that
  * evaluated no code query at all printed a complete-looking list and exited 0
  * (#89).
+ *
+ * Reporting a gap truthfully is not the same as not having one. The back off
+ * a 429 advertises (583s in #89, 735s in #95) is at or beyond what a single
+ * query is allowed to wait, so on a real rate limit the in-place retry
+ * declines and the signal goes unknown however well that is then described.
+ * What was measured to work, twice, is coming back a couple of minutes later,
+ * so the run now takes one second pass over whatever it could not read before
+ * it reports. That closes the gap rather than narrating it. It does not
+ * change what happens when the gap survives: an unmeasured signal is still
+ * `unknown`, still named, and still exits 0. Whether an unreadable `records`
+ * ought to fail the run instead is a question about the alerting contract and
+ * is open in #95.
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
-import { parseBackoffSeconds, reportLines, noChangeLines } from './adoption-decide.mjs';
+import {
+  parseBackoffSeconds,
+  reportLines,
+  noChangeLines,
+  planSecondPass,
+  remainingSkipped,
+} from './adoption-decide.mjs';
 
 const STATE = '.github/adoption.json';
 
@@ -104,6 +122,12 @@ const seconds = (value, fallback) => {
 };
 const MAX_BACKOFF_SECONDS = seconds(process.env.MAX_BACKOFF_SECONDS, 660);
 const MAX_TOTAL_BACKOFF_SECONDS = seconds(process.env.MAX_TOTAL_BACKOFF_SECONDS, 900);
+// How long the second pass settles before re-reading the signals the first
+// pass could not. Deliberately far short of the back off a 429 advertises:
+// the point of coming back is that the window reopens on its own clock, and
+// two minutes was measured as enough twice (#95). Overridable like the two
+// above so the pass can be exercised without sitting through it.
+const SECOND_PASS_SETTLE_SECONDS = seconds(process.env.SECOND_PASS_SETTLE_SECONDS, 60);
 let backoffSpent = 0;
 const DEFAULT_REPOS = [
   'contextpassport/spec',
@@ -140,26 +164,35 @@ function ghErrorText(e) {
     .join('\n');
 }
 
+// One code search, no retry and no interpretation. Separate from
+// codeSearchCount so the second pass can make a bare attempt without
+// re-entering the back off machinery below. Throws on any gh failure; both
+// callers decide what that means.
+function searchCount(query) {
+  return Number(
+    gh(['api', '-X', 'GET', 'search/code', '--raw-field', `q=${query}`, '--jq', '.total_count']).trim(),
+  );
+}
+
 /**
  * Count matches for one code query, retrying once if GitHub rate limits us.
  *
- * The retry is the point. Code search is limited per token, not per workflow,
- * so a shared runner can arrive at a window that is already spent, and the
- * back off GitHub then advertises (583s in #89) is far longer than anything
- * the 7s spacing between calls can absorb. Spacing calls within a run cannot
- * open a window that is closed for reasons outside the run; waiting for the
- * window it names can, and a re-dispatch two minutes later was measured as
- * enough.
+ * The retry helps only when the window GitHub names is one this run may wait
+ * for. Code search is limited per token, not per workflow, so a shared runner
+ * can arrive at a window that is already spent, and the back off then
+ * advertised (583s in #89, 735s in #95) is far longer than anything the 7s
+ * spacing between calls can absorb, and at or beyond the cap below. Spacing
+ * calls within a run cannot open a window that is closed for reasons outside
+ * the run; waiting for the window it names can, when the wait is short enough
+ * to be allowed. When it is not, this declines, and the second pass at the
+ * end of the run is what comes back for the signal instead.
  *
  * Returns null when the count could not be established, which the caller
  * records as unmeasured. Still null rather than 0: a transient API problem
  * must never read as adoption vanishing.
  */
 function codeSearchCount(query, name) {
-  const attempt = () =>
-    Number(
-      gh(['api', '-X', 'GET', 'search/code', '--raw-field', `q=${query}`, '--jq', '.total_count']).trim(),
-    );
+  const attempt = () => searchCount(query);
   try {
     return attempt();
   } catch (e) {
@@ -226,7 +259,7 @@ const foundIn = {};
 // so. Before #89 the only record of a skip was a console.log in the middle of
 // a run judged by its exit code, and a skipped signal then vanished from the
 // report rather than appearing as a gap in it.
-const skipped = [];
+let skipped = [];
 
 const pause = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
@@ -249,6 +282,53 @@ for (const [name, query] of Object.entries(CODE_QUERIES)) {
 }
 
 Object.assign(current, repoStats());
+
+// ----------------------------------------------------------- second pass
+//
+// Come back once for whatever the first pass could not read. The in-place
+// retry inside codeSearchCount honours the back off GitHub advertises, and
+// that figure (583s in #89, 735s in #95) is at or past the cap a single query
+// may wait, so on a real rate limit it declines and the signal goes unknown.
+// Coming back a couple of minutes later is what was actually measured to
+// work, twice. The fork and star lookups above have already run, so some of
+// the settle is time this run was spending anyway.
+//
+// One bare attempt each, not the full retry machinery: the settle is the
+// wait, and a second pass that could itself sit through another back off
+// would make the run's cost unpredictable for no extra signal.
+const plan = planSecondPass({
+  skipped,
+  backoffSpent,
+  maxTotalBackoffSeconds: MAX_TOTAL_BACKOFF_SECONDS,
+  settleSeconds: SECOND_PASS_SETTLE_SECONDS,
+});
+
+if (plan.retry.length > 0) {
+  console.error(
+    `\nSecond pass: ${plan.reason}. Settling ${plan.waitSeconds}s, then re-reading: ${plan.retry.join(', ')}`,
+  );
+  pause(plan.waitSeconds * 1000);
+
+  const recovered = [];
+  for (const name of plan.retry) {
+    pause(7000);
+    try {
+      const count = searchCount(CODE_QUERIES[name]);
+      current[name] = count;
+      if (count > 0) foundIn[name] = codeSearchRepos(CODE_QUERIES[name]);
+      recovered.push(name);
+      console.error(`  ${name}: measured on the second pass`);
+    } catch (e) {
+      console.error(`  ${name}: still unreadable: ${ghErrorText(e).trim().split('\n')[0]}`);
+    }
+  }
+
+  // A recovered signal must leave the skip list, or the report would print
+  // `unknown` over a count the run is holding. That is #89 inverted, and it
+  // would be just as untrue.
+  skipped = remainingSkipped(skipped, recovered);
+  if (skipped.length === 0) console.error('  second pass closed every gap');
+}
 
 const previous = existsSync(STATE) ? JSON.parse(readFileSync(STATE, 'utf8')) : {};
 const before = previous.signals || {};

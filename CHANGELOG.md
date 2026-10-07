@@ -79,6 +79,22 @@ breaking, which is exactly what happened in 2.0.
   still does not fail the run: it is not adoption news. The report and back off
   logic moved to `.github/adoption-decide.mjs` and is covered by tests that need
   no network.
+- The adoption check reported an unreadable signal truthfully but did nothing to
+  read it (#95). The back off a rate-limited code search advertises was 583s in
+  #89 and 735s in #95, both at or beyond the cap a single query is allowed to
+  wait, so on a real rate limit the retry added for #89 declines and the signal
+  goes `unknown`. Two runs in 24 hours each failed to read signals they exist to
+  read, and because an unmeasured signal exits 0 the workflow succeeded and no
+  email was sent, so a week in which `records` could not be read was
+  indistinguishable from a week in which it was read and was zero. The run now
+  takes one second pass over whatever it could not measure, after the fork and
+  star lookups, settling 60s first. That is the remedy the file already
+  documented and that a manual re-dispatch was twice measured to achieve, now
+  taken automatically. A signal recovered on the second pass is reported as its
+  count rather than as a gap. Nothing else changes: a gap that survives is still
+  `unknown`, still named, and still exits 0, and whether an unreadable `records`
+  ought to fail the run instead is a separate question about the alerting
+  contract, left open in #95.
 
 ## [2.0.1] - 2026-08-28
 
