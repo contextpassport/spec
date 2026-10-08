@@ -10,7 +10,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { parseBackoffSeconds, reportLines, noChangeLines } from './adoption-decide.mjs';
+import {
+  parseBackoffSeconds,
+  reportLines,
+  noChangeLines,
+  planSecondPass,
+  remainingSkipped,
+} from './adoption-decide.mjs';
 
 const NAMES = ['records', 'python', 'typescript', 'tinker', 'forks_spec', 'stars_spec'];
 
@@ -105,4 +111,86 @@ test('a run with a gap in it does not claim nothing changed', () => {
 test('one skipped signal reads as one, not as 1 were', () => {
   const text = noChangeLines(['records']).lines.join('\n');
   assert.match(text, /1 was not measured/);
+});
+
+// The second pass (#95). The first pass already retries in place, but only
+// within a cap the observed back offs exceed, so on a real rate limit it
+// declines and the signal goes unknown. These cover when coming back a second
+// time is worth it, and the bookkeeping that keeps a recovered signal from
+// still being reported as a gap.
+
+test('a run with unmeasured signals comes back for exactly those', () => {
+  const plan = planSecondPass({ skipped: ['records', 'tinker'], settleSeconds: 60 });
+  assert.deepEqual(plan.retry, ['records', 'tinker']);
+  assert.equal(plan.waitSeconds, 60);
+});
+
+test('a run that measured everything does not wait around', () => {
+  const plan = planSecondPass({ skipped: [], settleSeconds: 60 });
+  assert.deepEqual(plan.retry, []);
+  assert.equal(plan.waitSeconds, 0);
+});
+
+// Waiting must not pile onto waiting. A run that already sat through its
+// whole back off allowance is in a window a further minute will not reopen.
+test('a run that already spent its waiting budget does not add more', () => {
+  const plan = planSecondPass({
+    skipped: ['records'],
+    backoffSpent: 900,
+    maxTotalBackoffSeconds: 900,
+  });
+  assert.deepEqual(plan.retry, []);
+  assert.equal(plan.waitSeconds, 0);
+  assert.match(plan.reason, /already spent/);
+});
+
+test('waiting some of the budget still leaves a second pass available', () => {
+  const plan = planSecondPass({
+    skipped: ['records'],
+    backoffSpent: 120,
+    maxTotalBackoffSeconds: 900,
+    settleSeconds: 60,
+  });
+  assert.deepEqual(plan.retry, ['records']);
+  assert.equal(plan.waitSeconds, 60);
+});
+
+test('the plan does not alias the caller\'s skip list', () => {
+  const skipped = ['records'];
+  const plan = planSecondPass({ skipped });
+  plan.retry.push('typescript');
+  assert.deepEqual(skipped, ['records']);
+});
+
+// #89 inverted. Recovering a signal and leaving it on the skip list would
+// print `unknown` over a count the run is holding, which is just as untrue as
+// omitting it was.
+test('a signal measured on the second pass stops being reported as a gap', () => {
+  assert.deepEqual(remainingSkipped(['records', 'python', 'tinker'], ['records', 'tinker']), [
+    'python',
+  ]);
+});
+
+test('a signal the second pass could not read stays a gap', () => {
+  assert.deepEqual(remainingSkipped(['records'], []), ['records']);
+});
+
+test('closing every gap leaves nothing for the summary to name', () => {
+  const left = remainingSkipped(['records', 'python'], ['python', 'records']);
+  assert.deepEqual(left, []);
+  assert.equal(noChangeLines(left).complete, true);
+});
+
+// The two halves have to agree: whatever remainingSkipped returns is what the
+// report prints, so a recovered signal must read as its count, not as unknown.
+test('the report shows a recovered signal as measured, and a surviving gap as unknown', () => {
+  const skipped = remainingSkipped(['records', 'python'], ['records']);
+  const lines = reportLines({
+    names: ['records', 'python'],
+    current: { records: 3 },
+    before: { records: 0, python: 0 },
+    skipped,
+  });
+  assert.match(lines[0], /records\s+3\s+\(up from 0\)/);
+  assert.match(lines[1], /python\s+unknown\s+search failed/);
 });
