@@ -189,13 +189,13 @@ Using [`javascript-opentimestamps`](https://www.npmjs.com/package/javascript-ope
 Install:
 
 ```bash
-npm install @context-passport/core javascript-opentimestamps
+npm install @contextpassport/core javascript-opentimestamps
 ```
 
 Anchor at creation time:
 
 ```ts
-import { makePassport } from "@context-passport/core";
+import { makePassport } from "@contextpassport/core";
 import OpenTimestamps from "javascript-opentimestamps";
 
 async function anchorPayloadHash(payloadHashHex: string): Promise<Buffer> {
