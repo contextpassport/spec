@@ -77,11 +77,22 @@ The goal in `GOVERNANCE.md` is to have at least three independent maintainers fr
 
 ## 6. What kinds of issues are good first contributions
 
-If you want to contribute but don't have a specific change in mind, look at GitHub issues labeled:
+If you want to contribute but don't have a specific change in mind, look at the open
+issues carrying these labels. The links search the whole `contextpassport` organisation,
+because the specification is only one of its repositories: the reference SDKs, the
+conformance vectors and the agent template are separate repositories, and a good deal of
+the newcomer-sized work sits in those.
 
-- [`good first issue`](https://github.com/contextpassport/spec/labels/good%20first%20issue) — small, well-scoped, suitable for first-time contributors
-- [`help wanted`](https://github.com/contextpassport/spec/labels/help%20wanted) — clear scope, larger scope, looking for someone to pick up
-- [`documentation`](https://github.com/contextpassport/spec/labels/documentation) — improvements to specification text, examples, or design notes
+- [`good first issue`](https://github.com/search?q=org%3Acontextpassport+is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22&type=issues): small, well scoped, suitable for first-time contributors
+- [`help wanted`](https://github.com/search?q=org%3Acontextpassport+is%3Aissue+is%3Aopen+label%3A%22help+wanted%22&type=issues): clear scope, larger scope, looking for someone to pick up
+- [`documentation`](https://github.com/search?q=org%3Acontextpassport+is%3Aissue+is%3Aopen+label%3Adocumentation&type=issues): improvements to specification text, examples, or design notes
+
+The repositories are [`spec`](https://github.com/contextpassport/spec),
+[`python`](https://github.com/contextpassport/python),
+[`typescript`](https://github.com/contextpassport/typescript),
+[`conformance-tests`](https://github.com/contextpassport/conformance-tests),
+[`verifiable-agent-template`](https://github.com/contextpassport/verifiable-agent-template)
+and [`tinker-provenance`](https://github.com/contextpassport/tinker-provenance).
 
 Don't see what you want? Open a discussion describing what you'd like to work on, and a maintainer will help shape it into a tractable issue.
 
