@@ -15,6 +15,7 @@ import {
   reportLines,
   noChangeLines,
   planSecondPass,
+  allowSecondPassWait,
   remainingSkipped,
 } from './adoption-decide.mjs';
 
@@ -193,4 +194,78 @@ test('the report shows a recovered signal as measured, and a surviving gap as un
   });
   assert.match(lines[0], /records\s+3\s+\(up from 0\)/);
   assert.match(lines[1], /python\s+unknown\s+search failed/);
+});
+
+// The second pass declining a window it could afford is what made the run of
+// 12 October 2026 report every code signal as unknown. These pin the
+// arithmetic from that run, so the pass cannot quietly go back to throwing
+// away a figure GitHub handed it.
+
+test('a window the run can afford is waited for', () => {
+  const allowed = allowSecondPassWait({
+    wait: 74,
+    backoffSpent: 131,
+    maxBackoffSeconds: 660,
+    maxTotalBackoffSeconds: 900,
+  });
+  assert.equal(allowed.wait, 74);
+});
+
+test('the four windows of the 12 October run were all affordable', () => {
+  // records 74s, python 67s, typescript 60s, tinker 53s, against the 131s the
+  // first pass had already spent of its 900s. The run declined all four.
+  let spent = 131;
+  for (const wait of [74, 67, 60, 53]) {
+    const allowed = allowSecondPassWait({
+      wait,
+      backoffSpent: spent,
+      maxBackoffSeconds: 660,
+      maxTotalBackoffSeconds: 900,
+    });
+    assert.equal(allowed.wait, wait, `${wait}s should have been affordable`);
+    spent += allowed.wait;
+  }
+  assert.equal(spent, 385);
+  assert.ok(spent < 900, 'all four fit inside the run total allowance');
+});
+
+test('a window longer than the run will ever sit through is declined', () => {
+  // 735s was advertised twice on that same run.
+  const allowed = allowSecondPassWait({
+    wait: 735,
+    backoffSpent: 0,
+    maxBackoffSeconds: 660,
+    maxTotalBackoffSeconds: 900,
+  });
+  assert.equal(allowed.wait, null);
+  assert.match(allowed.reason, /longer than this run will wait/);
+});
+
+test('a window that would take the run past its total allowance is declined', () => {
+  const allowed = allowSecondPassWait({
+    wait: 100,
+    backoffSpent: 850,
+    maxBackoffSeconds: 660,
+    maxTotalBackoffSeconds: 900,
+  });
+  assert.equal(allowed.wait, null);
+  assert.match(allowed.reason, /waited enough already/);
+});
+
+test('a failure that names no window leaves nothing to wait for', () => {
+  for (const wait of [null, undefined, NaN, -1]) {
+    const allowed = allowSecondPassWait({ wait, maxTotalBackoffSeconds: 900 });
+    assert.equal(allowed.wait, null, `${String(wait)} is not a window`);
+  }
+  assert.match(allowSecondPassWait({ wait: null }).reason, /named no retry delay/);
+});
+
+test('a wait is allowed to land exactly on the total allowance', () => {
+  const allowed = allowSecondPassWait({
+    wait: 50,
+    backoffSpent: 850,
+    maxBackoffSeconds: 660,
+    maxTotalBackoffSeconds: 900,
+  });
+  assert.equal(allowed.wait, 50);
 });
