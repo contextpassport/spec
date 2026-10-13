@@ -98,6 +98,7 @@ import {
   reportLines,
   noChangeLines,
   planSecondPass,
+  allowSecondPassWait,
   remainingSkipped,
 } from './adoption-decide.mjs';
 
@@ -293,9 +294,18 @@ Object.assign(current, repoStats());
 // work, twice. The fork and star lookups above have already run, so some of
 // the settle is time this run was spending anyway.
 //
-// One bare attempt each, not the full retry machinery: the settle is the
-// wait, and a second pass that could itself sit through another back off
-// would make the run's cost unpredictable for no extra signal.
+// One attempt each after the settle, and then, if GitHub answers that attempt
+// with a window short enough to be allowed, one wait and one more try.
+//
+// This pass used to stop at the bare attempt, on the reasoning that sitting
+// through another back off would cost an unpredictable amount for no extra
+// signal. The run of 12 October 2026 showed both halves of that to be wrong:
+// it was told 74s, 67s, 60s and 53s, each far inside the per-wait cap and
+// together inside the 769s the run still had, and it threw all four figures
+// away and reported the entire tripwire as `unknown`. allowSecondPassWait
+// keeps the cost bounded by charging these waits to the same running total
+// the first pass draws on, so the run still cannot exceed the allowance it
+// was already keeping.
 const plan = planSecondPass({
   skipped,
   backoffSpent,
@@ -310,16 +320,39 @@ if (plan.retry.length > 0) {
   pause(plan.waitSeconds * 1000);
 
   const recovered = [];
+  const record = (name, count) => {
+    current[name] = count;
+    if (count > 0) foundIn[name] = codeSearchRepos(CODE_QUERIES[name]);
+    recovered.push(name);
+  };
+
   for (const name of plan.retry) {
     pause(7000);
     try {
-      const count = searchCount(CODE_QUERIES[name]);
-      current[name] = count;
-      if (count > 0) foundIn[name] = codeSearchRepos(CODE_QUERIES[name]);
-      recovered.push(name);
+      record(name, searchCount(CODE_QUERIES[name]));
       console.error(`  ${name}: measured on the second pass`);
+      continue;
     } catch (e) {
-      console.error(`  ${name}: still unreadable: ${ghErrorText(e).trim().split('\n')[0]}`);
+      const first = ghErrorText(e).trim().split('\n')[0];
+      const allowed = allowSecondPassWait({
+        wait: parseBackoffSeconds(ghErrorText(e)),
+        backoffSpent,
+        maxBackoffSeconds: MAX_BACKOFF_SECONDS,
+        maxTotalBackoffSeconds: MAX_TOTAL_BACKOFF_SECONDS,
+      });
+      if (allowed.wait === null) {
+        console.error(`  ${name}: still unreadable: ${first}, and ${allowed.reason}`);
+        continue;
+      }
+      console.error(`  ${name}: still rate limited, ${allowed.reason}, then trying once more`);
+      backoffSpent += allowed.wait;
+      pause((allowed.wait + 1) * 1000);
+      try {
+        record(name, searchCount(CODE_QUERIES[name]));
+        console.error(`  ${name}: measured after waiting out the window`);
+      } catch (lastErr) {
+        console.error(`  ${name}: still unreadable: ${ghErrorText(lastErr).trim().split('\n')[0]}`);
+      }
     }
   }
 

@@ -159,3 +159,55 @@ export function remainingSkipped(skipped = [], recovered = []) {
   const done = new Set(recovered);
   return skipped.filter((name) => !done.has(name));
 }
+
+/**
+ * Whether a back off named on the second pass may be waited for.
+ *
+ * The second pass used to make one bare attempt per signal and give up on a
+ * 429, on the reasoning that sitting through another back off would make the
+ * run's cost unpredictable for no extra signal. The Steward run of 12 October
+ * 2026 falsified the second half of that. All four code signals went
+ * unmeasured on the first pass, and the second pass was then told exactly how
+ * long each window had left to run:
+ *
+ *   records 74s, python 67s, typescript 60s, tinker 53s
+ *
+ * Every one of those is far below the per-wait cap, and together they are 254s
+ * against the 769s the run still had of its total allowance, the first pass
+ * having spent 131s. So the run held both the budget and the figure it needed
+ * and discarded them, and reported all four signals as `unknown` while exiting
+ * 0. The cost was not unpredictable, it was bounded and affordable, and the
+ * extra signal was the whole adoption tripwire for that week.
+ *
+ * The cost stays bounded because this declines on the same two limits the
+ * first pass uses, against the same running total, so honouring a wait here
+ * cannot take the run past an allowance it was already keeping.
+ *
+ *   no wait named    gh failed for some reason other than a rate limit, so
+ *                    there is no window to wait for and nothing to decide.
+ *   wait too long    one window is longer than this run will ever sit through.
+ *                    735s was advertised twice on the run above, and waiting
+ *                    that out is worse than reporting the gap.
+ *   budget spent     this wait would take the run past its total allowance.
+ *
+ * Returns the seconds to wait, or null with the reason it declined. Deciding
+ * it here rather than inline is the split the rest of this file exists for:
+ * the rule is testable without a network, the sleeping is not.
+ */
+export function allowSecondPassWait({
+  wait = null,
+  backoffSpent = 0,
+  maxBackoffSeconds = Infinity,
+  maxTotalBackoffSeconds = Infinity,
+} = {}) {
+  if (wait === null || !Number.isFinite(wait) || wait < 0) {
+    return { wait: null, reason: 'GitHub named no retry delay' };
+  }
+  if (wait > maxBackoffSeconds) {
+    return { wait: null, reason: `rate limited for ${wait}s, longer than this run will wait` };
+  }
+  if (backoffSpent + wait > maxTotalBackoffSeconds) {
+    return { wait: null, reason: `rate limited for ${wait}s, and this run has waited enough already` };
+  }
+  return { wait, reason: `waiting the ${wait}s GitHub asked for` };
+}
