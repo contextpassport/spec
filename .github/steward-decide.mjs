@@ -19,7 +19,17 @@
  * WHY_NOT_REVIEW_DECISION_ALONE before trusting `reviewDecision`.
  */
 
-export const CATEGORIES = ['unanswered', 'approved_unmerged', 'stalled'];
+export const CATEGORIES = [
+  'unanswered', 'approved_unmerged', 'stalled', 'maintainer_unmerged',
+];
+
+/**
+ * The first three ask something of the maintainer on someone else's behalf.
+ * The fourth is his own backlog. The reporting half needs to tell them apart,
+ * because "these decay from neglect" is true of a contributor and not of a
+ * pull request its own author can merge whenever he likes.
+ */
+export const OUTSIDE_CATEGORIES = ['unanswered', 'approved_unmerged', 'stalled'];
 
 /**
  * WHY_NOT_JUST_ACTIVITY
@@ -44,6 +54,38 @@ export const CATEGORIES = ['unanswered', 'approved_unmerged', 'stalled'];
  * The idle-time rule is still here, as `stalled`. It is the right instrument
  * for a different question, namely a thread that genuinely went quiet, and it
  * is the only one of the three that covers issues as well as pull requests.
+ */
+
+/**
+ * WHY_MAINTAINER_PULL_REQUESTS
+ *
+ * The three rules above all drop maintainer-authored items before any rule
+ * runs, and for an outside contribution that is right: the question each one
+ * asks is whether somebody who does not have the merge button has been left
+ * waiting. A maintainer is never waiting on himself for a reply.
+ *
+ * That filter went wrong when the maintainer list had one name on it and that
+ * name wrote every open pull request. On 6 October 2026 the check reported
+ * "nothing is waiting on a reply, a merge, or a decision" across six open pull
+ * requests, the oldest three open since 29 August, one of them the fix for a
+ * canonicalization divergence already published to PyPI and npm. Every line of
+ * that report was true under the check's own definition and the project was
+ * still sitting on a 40 day stall. See #97.
+ *
+ * So maintainer-authored work gets one rule of its own, and it is deliberately
+ * the dullest one available: a pull request he opened, still open past the
+ * grace period. No reply rule, because a reply from himself proves nothing. No
+ * approval rule, because nobody else reviews these and waiting for an approval
+ * that is not coming is how the stall happened. Open and old is the whole test.
+ *
+ * Issues are excluded, and that exclusion is what keeps this from crying wolf
+ * the way #67 and #76 did. A maintainer's own issue is a note about work not
+ * yet done, which is what an issue tracker is for; flagging those would report
+ * the entire backlog every Monday until it was closed, and a check that always
+ * fails is a check nobody reads. A pull request is different in kind. It is
+ * finished work, already written and already green, held up only by the merge
+ * nobody else can perform, and the cost of leaving it open is that the tree it
+ * was cut from keeps moving underneath it.
  */
 
 /**
@@ -114,16 +156,25 @@ export function classify(item, activity, { maintainers, graceDays, now }) {
   const { logins, approvedBy } = normalizeActivity(activity);
 
   const author = item.author?.login || '';
-  if (!author || isMaintainer(author) || isBot(author)) return null;
+  if (!author || isBot(author)) return null;
 
   const age = daysBetween(item.createdAt, now);
   if (age < graceDays) return null;
+
+  const idleOrAge = () => (item.updatedAt ? daysBetween(item.updatedAt, now) : age);
+
+  // The maintainer's own backlog, on the one rule that cannot cry wolf:
+  // a pull request he opened and has not merged. See WHY_MAINTAINER_PULL_REQUESTS.
+  if (isMaintainer(author)) {
+    if (item.kind !== 'pull request') return null;
+    return { category: 'maintainer_unmerged', age, idle: idleOrAge() };
+  }
 
   const replied = logins.some(isMaintainer);
   if (!replied) return { category: 'unanswered', age, idle: age };
 
   // Answered. The question is now whether answering led anywhere.
-  const idle = item.updatedAt ? daysBetween(item.updatedAt, now) : age;
+  const idle = idleOrAge();
 
   // Approved and still open is a merge that did not happen. Deliberately not
   // conditioned on idle time: see WHY_NOT_JUST_ACTIVITY. CHANGES_REQUESTED is
@@ -163,6 +214,7 @@ export const HEADINGS = {
   unanswered: 'Nobody has answered these',
   approved_unmerged: 'These were approved and not merged',
   stalled: 'These were answered and then left',
+  maintainer_unmerged: 'These are your own, still open',
 };
 
 export const GUIDANCE = {
@@ -170,4 +222,6 @@ export const GUIDANCE = {
   approved_unmerged:
     'The review already said yes. Merging, or saying what merging is waiting on, is what moves these.',
   stalled: 'These went quiet after a reply. They need a decision or a close, not another comment.',
+  maintainer_unmerged:
+    'Nobody else can merge these. Merging, closing, or writing down what each one is waiting on is what moves them.',
 };

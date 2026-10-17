@@ -12,6 +12,7 @@ import assert from 'node:assert/strict';
 
 import {
   classify, triage, isBot, approversFromReviews, normalizeActivity, CATEGORIES,
+  OUTSIDE_CATEGORIES,
 } from './steward-decide.mjs';
 
 const NOW = new Date('2026-09-12T12:00:00Z');
@@ -47,9 +48,59 @@ test('inside the grace period nothing is reported, however quiet', () => {
   assert.equal(v, null);
 });
 
-test("a maintainer's own item is never reported", () => {
-  assert.equal(classify(pr({ author: { login: 'bengunvl' } }), [], OPTS), null);
-  assert.equal(classify(pr({ author: { login: 'BenGunvl' } }), [], OPTS), null);
+// This case used to assert null for both, which is the bug in #97: with one
+// name on the maintainer list and that name on every open pull request, the
+// check had nothing in scope and reported all clear over a 40 day stall.
+test("a maintainer's own pull request is reported once past the grace period", () => {
+  const v = classify(pr({ author: { login: 'bengunvl' } }), [], OPTS);
+  assert.equal(v.category, 'maintainer_unmerged');
+  assert.equal(
+    classify(pr({ author: { login: 'BenGunvl' } }), [], OPTS).category,
+    'maintainer_unmerged',
+    'the maintainer list is matched case-insensitively',
+  );
+});
+
+test("a maintainer's own pull request is quiet inside the grace period", () => {
+  const fresh = pr({ author: { login: 'bengunvl' }, createdAt: daysAgo(3), updatedAt: daysAgo(3) });
+  assert.equal(classify(fresh, [], OPTS), null);
+});
+
+// The exclusion that keeps the new rule from reporting the whole backlog every
+// Monday. See WHY_MAINTAINER_PULL_REQUESTS.
+test("a maintainer's own issue is still never reported, however old", () => {
+  const old = issue({ author: { login: 'bengunvl' }, createdAt: daysAgo(400), updatedAt: daysAgo(400) });
+  assert.equal(classify(old, [], OPTS), null);
+});
+
+test('a maintainer commenting on his own pull request does not silence it', () => {
+  // The mirror of WHY_NOT_JUST_ACTIVITY: his own comment resets updatedAt, and
+  // the rule is open-and-old, so it reports anyway.
+  const v = classify(
+    pr({ author: { login: 'bengunvl' }, createdAt: daysAgo(49), updatedAt: daysAgo(1) }),
+    ['bengunvl'],
+    OPTS,
+  );
+  assert.equal(v.category, 'maintainer_unmerged');
+  assert.ok(v.age >= 49);
+  assert.ok(v.idle < OPTS.graceDays, 'idle time alone would have called this healthy');
+});
+
+test('an outside pull request is unaffected by the maintainer rule', () => {
+  // Approval still wins for an outside contribution; the new category must not
+  // swallow the three rules that were already here.
+  const v = classify(
+    pr({ createdAt: daysAgo(12), updatedAt: daysAgo(2), reviewDecision: 'APPROVED' }),
+    ['bengunvl'],
+    OPTS,
+  );
+  assert.equal(v.category, 'approved_unmerged');
+});
+
+test('maintainer_unmerged is not counted as an outside contribution', () => {
+  assert.ok(CATEGORIES.includes('maintainer_unmerged'));
+  assert.ok(!OUTSIDE_CATEGORIES.includes('maintainer_unmerged'));
+  for (const c of OUTSIDE_CATEGORIES) assert.ok(CATEGORIES.includes(c));
 });
 
 test('bots are not contributors', () => {
@@ -155,8 +206,11 @@ test('triage groups by category and sorts each group oldest first', () => {
 test('a healthy set produces no findings at all', () => {
   const items = [
     pr({ number: 1, createdAt: daysAgo(2), updatedAt: daysAgo(1) }),
-    pr({ number: 2, author: { login: 'bengunvl' }, createdAt: daysAgo(90) }),
+    // His own, but not yet past the grace period. The 90 day version this
+    // fixture used to carry is a finding now, which is the point of #97.
+    pr({ number: 2, author: { login: 'bengunvl' }, createdAt: daysAgo(2), updatedAt: daysAgo(2) }),
     issue({ number: 3, createdAt: daysAgo(30), updatedAt: daysAgo(1) }),
+    issue({ number: 4, author: { login: 'bengunvl' }, createdAt: daysAgo(90), updatedAt: daysAgo(90) }),
   ];
   const groups = triage(items, () => ['bengunvl'], OPTS);
   assert.equal(CATEGORIES.reduce((n, c) => n + groups.get(c).length, 0), 0);
