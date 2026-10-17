@@ -24,7 +24,7 @@ import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
 import {
-  triage, approversFromReviews, CATEGORIES, HEADINGS, GUIDANCE,
+  triage, approversFromReviews, CATEGORIES, OUTSIDE_CATEGORIES, HEADINGS, GUIDANCE,
 } from './steward-decide.mjs';
 
 const DEFAULT_REPOS = [
@@ -154,7 +154,9 @@ if (total === 0) {
   process.exit(0);
 }
 
-console.error(`\n${total} contribution(s) need attention:\n`);
+const outsideTotal = OUTSIDE_CATEGORIES.reduce((n, c) => n + groups.get(c).length, 0);
+
+console.error(`\n${total} item(s) need attention:\n`);
 for (const category of CATEGORIES) {
   const list = groups.get(category);
   if (list.length === 0) continue;
@@ -167,5 +169,12 @@ for (const category of CATEGORIES) {
     console.error(`       ${w.url}\n`);
   }
 }
-console.error('These are the only part of this project that decays from neglect.');
+// Said only when an outside contribution is actually among the findings. A
+// pull request the maintainer can merge himself does not decay the same way,
+// and a closing line that overstates the stakes every week stops being read.
+console.error(
+  outsideTotal > 0
+    ? 'Outside contributions are the only part of this project that decays from neglect.'
+    : 'Nobody outside is waiting. This is work of your own that has not landed.',
+);
 process.exit(1);
