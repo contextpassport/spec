@@ -51,7 +51,9 @@ Follow the **chain reset** pattern from [`docs/migration-and-versioning.md`](../
 
 ### Phase 1 — upgrade SDKs (no behavior change yet)
 
-Bump dependencies but pin to `schema_version: "1.0"` for newly produced records. The v2.x SDKs let you do this by passing the version explicitly if you need a freeze window. (In the default path, the SDK produces v2.0 records.) Verify that `verify_chain` over your existing v1.x records continues to return true. This proves the compat shim is wired up correctly.
+Bump dependencies, then verify that `verify_chain` over your existing v1.x records continues to return true. This proves the compat shim is wired up correctly.
+
+The v2.x SDKs produce v2.0 records and nothing else. `make_passport` and `makePassport` take no version argument, and the compat shim is for verification only: it exposes the v1.x canonicalization and hash helpers, not a v1.x record builder. If you need a freeze window where newly produced records stay on v1.x, keep the v1.x SDK pinned for the producers and upgrade the verifiers first. That order is safe because a v2.x verifier reads v1.x records, as [`docs/migration-and-versioning.md`](../migration-and-versioning.md) §4.5 describes.
 
 ### Phase 2 — start the new chain
 
