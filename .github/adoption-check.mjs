@@ -77,17 +77,20 @@
  * evaluated no code query at all printed a complete-looking list and exited 0
  * (#89).
  *
- * Reporting a gap truthfully is not the same as not having one. The back off
- * a 429 advertises (583s in #89, 735s in #95) is at or beyond what a single
- * query is allowed to wait, so on a real rate limit the in-place retry
- * declines and the signal goes unknown however well that is then described.
- * What was measured to work, twice, is coming back a couple of minutes later,
- * so the run now takes one second pass over whatever it could not read before
- * it reports. That closes the gap rather than narrating it. It does not
- * change what happens when the gap survives: an unmeasured signal is still
- * `unknown`, still named, and still exits 0. Whether an unreadable `records`
- * ought to fail the run instead is a question about the alerting contract and
- * is open in #95.
+ * Reporting a gap truthfully is not the same as not having one. Two things
+ * close it. A 429 names the window it is refusing on, and the run follows that
+ * window for as long as it can afford to, rather than waiting once and giving
+ * up: waiting once is what lost all four code signals on 2 November 2026, when
+ * the windows still being named on the final attempts were 23s, 13s, 13s and
+ * 14s and roughly 750s of the allowance was unspent. And where a window is
+ * genuinely too long to sit through (735s, advertised twice that day), the run
+ * settles and takes a second pass, because the quota reopens on its own clock
+ * rather than the one the 429 advertises.
+ *
+ * Neither changes what happens when the gap survives: an unmeasured signal is
+ * still `unknown`, still named, and still exits 0. Whether an unreadable
+ * `records` ought to fail the run instead is a question about the alerting
+ * contract and is open in #95.
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
@@ -98,7 +101,7 @@ import {
   reportLines,
   noChangeLines,
   planSecondPass,
-  allowSecondPassWait,
+  allowRetryWait,
   remainingSkipped,
 } from './adoption-decide.mjs';
 
@@ -129,6 +132,16 @@ const MAX_TOTAL_BACKOFF_SECONDS = seconds(process.env.MAX_TOTAL_BACKOFF_SECONDS,
 // two minutes was measured as enough twice (#95). Overridable like the two
 // above so the pass can be exercised without sitting through it.
 const SECOND_PASS_SETTLE_SECONDS = seconds(process.env.SECOND_PASS_SETTLE_SECONDS, 60);
+// How many times one query may be attempted before the signal is given up on.
+// The caps above bound how long the run waits; this bounds how many times it
+// comes back, so a window that renews itself every few seconds cannot hold a
+// signal forever. Four was chosen against the run of 2 November 2026, where
+// every signal was readable on its third or fourth attempt.
+const positiveInt = (value, fallback) => {
+  const n = Math.trunc(seconds(value, fallback));
+  return n >= 1 ? n : fallback;
+};
+const MAX_SEARCH_ATTEMPTS = positiveInt(process.env.MAX_SEARCH_ATTEMPTS, 4);
 let backoffSpent = 0;
 const DEFAULT_REPOS = [
   'contextpassport/spec',
@@ -176,50 +189,50 @@ function searchCount(query) {
 }
 
 /**
- * Count matches for one code query, retrying once if GitHub rate limits us.
+ * Count matches for one code query, following the back off GitHub names for as
+ * long as the run can afford to.
  *
- * The retry helps only when the window GitHub names is one this run may wait
- * for. Code search is limited per token, not per workflow, so a shared runner
- * can arrive at a window that is already spent, and the back off then
- * advertised (583s in #89, 735s in #95) is far longer than anything the 7s
- * spacing between calls can absorb, and at or beyond the cap below. Spacing
- * calls within a run cannot open a window that is closed for reasons outside
- * the run; waiting for the window it names can, when the wait is short enough
- * to be allowed. When it is not, this declines, and the second pass at the
- * end of the run is what comes back for the signal instead.
+ * Code search is limited per token, not per workflow, so a run can arrive at a
+ * window another job already spent. The 7s spacing between calls does nothing
+ * about that: it cannot open a window that is closed for reasons outside the
+ * run. Waiting for the window GitHub names can, and GitHub names it precisely.
+ *
+ * This used to wait once and then give up. That discarded affordable windows:
+ * on 2 November 2026 all four signals were lost after their second attempt was
+ * told to wait 23s, 13s, 13s and 14s, with roughly 750s of the allowance
+ * unspent. So it now keeps following windows while allowRetryWait says yes,
+ * which it stops saying once this signal has used its attempts, the window is
+ * longer than any single wait may be, or the run's total allowance is spent.
  *
  * Returns null when the count could not be established, which the caller
  * records as unmeasured. Still null rather than 0: a transient API problem
  * must never read as adoption vanishing.
  */
 function codeSearchCount(query, name) {
-  const attempt = () => searchCount(query);
-  try {
-    return attempt();
-  } catch (e) {
-    const wait = parseBackoffSeconds(ghErrorText(e));
-    if (wait === null) {
-      console.error(`  ${name}: search failed, and GitHub named no retry delay`);
-      return null;
-    }
-    if (wait > MAX_BACKOFF_SECONDS) {
-      console.error(`  ${name}: rate limited for ${wait}s, longer than this run will wait`);
-      return null;
-    }
-    if (backoffSpent + wait > MAX_TOTAL_BACKOFF_SECONDS) {
-      console.error(`  ${name}: rate limited for ${wait}s, and this run has waited enough already`);
-      return null;
-    }
-    console.error(`  ${name}: rate limited, waiting the ${wait}s GitHub asked for, then retrying once`);
-    backoffSpent += wait;
-    pause((wait + 1) * 1000);
+  for (let attemptsUsed = 1; ; attemptsUsed++) {
     try {
-      const count = attempt();
-      console.error(`  ${name}: retry succeeded`);
+      const count = searchCount(query);
+      if (attemptsUsed > 1) console.error(`  ${name}: measured on attempt ${attemptsUsed}`);
       return count;
-    } catch (retryErr) {
-      console.error(`  ${name}: retry failed too: ${ghErrorText(retryErr).trim().split('\n')[0]}`);
-      return null;
+    } catch (e) {
+      const allowed = allowRetryWait({
+        wait: parseBackoffSeconds(ghErrorText(e)),
+        backoffSpent,
+        attemptsUsed,
+        maxAttempts: MAX_SEARCH_ATTEMPTS,
+        maxBackoffSeconds: MAX_BACKOFF_SECONDS,
+        maxTotalBackoffSeconds: MAX_TOTAL_BACKOFF_SECONDS,
+      });
+      if (allowed.wait === null) {
+        console.error(`  ${name}: ${allowed.reason}`);
+        return null;
+      }
+      console.error(
+        `  ${name}: ${allowed.reason}, then trying again` +
+          ` (attempt ${attemptsUsed + 1} of ${MAX_SEARCH_ATTEMPTS})`,
+      );
+      backoffSpent += allowed.wait;
+      pause((allowed.wait + 1) * 1000);
     }
   }
 }
@@ -286,26 +299,24 @@ Object.assign(current, repoStats());
 
 // ----------------------------------------------------------- second pass
 //
-// Come back once for whatever the first pass could not read. The in-place
-// retry inside codeSearchCount honours the back off GitHub advertises, and
-// that figure (583s in #89, 735s in #95) is at or past the cap a single query
-// may wait, so on a real rate limit it declines and the signal goes unknown.
-// Coming back a couple of minutes later is what was actually measured to
-// work, twice. The fork and star lookups above have already run, so some of
-// the settle is time this run was spending anyway.
+// Come back once for whatever the first pass could not read, after letting the
+// quota window settle. The point of coming back is that the window reopens on
+// its own clock rather than the one a 429 advertises, and the advertised
+// figure is the worst case rather than the wait actually needed. Coming back a
+// couple of minutes later is what was measured to work, in #95 and again on
+// 12 October 2026. The fork and star lookups above have already run, so some
+// of the settle is time this run was spending anyway.
 //
-// One attempt each after the settle, and then, if GitHub answers that attempt
-// with a window short enough to be allowed, one wait and one more try.
+// Each signal is then read with the same budgeted loop the first pass uses, so
+// the two passes cannot disagree about when a window is worth following. They
+// did disagree until 2 November 2026: this pass carried its own copy of the
+// rule that permitted exactly one wait, and gave up on windows of 23s, 13s,
+// 13s and 14s with most of the run's allowance unspent.
 //
-// This pass used to stop at the bare attempt, on the reasoning that sitting
-// through another back off would cost an unpredictable amount for no extra
-// signal. The run of 12 October 2026 showed both halves of that to be wrong:
-// it was told 74s, 67s, 60s and 53s, each far inside the per-wait cap and
-// together inside the 769s the run still had, and it threw all four figures
-// away and reported the entire tripwire as `unknown`. allowSecondPassWait
-// keeps the cost bounded by charging these waits to the same running total
-// the first pass draws on, so the run still cannot exceed the allowance it
-// was already keeping.
+// What bounds the cost is unchanged: every wait is charged to the same running
+// total the first pass draws on, so the run cannot exceed the allowance it was
+// already keeping, and the attempt cap stops a renewing window holding a
+// signal indefinitely.
 const plan = planSecondPass({
   skipped,
   backoffSpent,
@@ -320,40 +331,20 @@ if (plan.retry.length > 0) {
   pause(plan.waitSeconds * 1000);
 
   const recovered = [];
-  const record = (name, count) => {
+  for (const name of plan.retry) {
+    pause(7000);
+    // The same budgeted loop the first pass uses. The second pass used to
+    // carry its own copy of the rule, which allowed it exactly one wait, and
+    // so lost signals whose window was still being named in single digits.
+    const count = codeSearchCount(CODE_QUERIES[name], name);
+    if (count === null) {
+      console.error(`  ${name}: still unmeasured after the second pass`);
+      continue;
+    }
     current[name] = count;
     if (count > 0) foundIn[name] = codeSearchRepos(CODE_QUERIES[name]);
     recovered.push(name);
-  };
-
-  for (const name of plan.retry) {
-    pause(7000);
-    try {
-      record(name, searchCount(CODE_QUERIES[name]));
-      console.error(`  ${name}: measured on the second pass`);
-      continue;
-    } catch (e) {
-      const first = ghErrorText(e).trim().split('\n')[0];
-      const allowed = allowSecondPassWait({
-        wait: parseBackoffSeconds(ghErrorText(e)),
-        backoffSpent,
-        maxBackoffSeconds: MAX_BACKOFF_SECONDS,
-        maxTotalBackoffSeconds: MAX_TOTAL_BACKOFF_SECONDS,
-      });
-      if (allowed.wait === null) {
-        console.error(`  ${name}: still unreadable: ${first}, and ${allowed.reason}`);
-        continue;
-      }
-      console.error(`  ${name}: still rate limited, ${allowed.reason}, then trying once more`);
-      backoffSpent += allowed.wait;
-      pause((allowed.wait + 1) * 1000);
-      try {
-        record(name, searchCount(CODE_QUERIES[name]));
-        console.error(`  ${name}: measured after waiting out the window`);
-      } catch (lastErr) {
-        console.error(`  ${name}: still unreadable: ${ghErrorText(lastErr).trim().split('\n')[0]}`);
-      }
-    }
+    console.error(`  ${name}: measured on the second pass`);
   }
 
   // A recovered signal must leave the skip list, or the report would print

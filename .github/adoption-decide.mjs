@@ -161,32 +161,37 @@ export function remainingSkipped(skipped = [], recovered = []) {
 }
 
 /**
- * Whether a back off named on the second pass may be waited for.
+ * Whether a back off GitHub just named may be waited for.
  *
- * The second pass used to make one bare attempt per signal and give up on a
- * 429, on the reasoning that sitting through another back off would make the
- * run's cost unpredictable for no extra signal. The Steward run of 12 October
- * 2026 falsified the second half of that. All four code signals went
- * unmeasured on the first pass, and the second pass was then told exactly how
- * long each window had left to run:
+ * One rule, used everywhere a 429 is met, because the mistake it exists to
+ * prevent was made twice in the same file: holding an affordable window and
+ * throwing it away. The second pass used to give up on a 429 and was fixed
+ * for the run of 12 October 2026. The first pass, and the second pass after
+ * its one permitted wait, still gave up, and the run of 2 November 2026 lost
+ * all four code signals that way. Every window it was told about on its final
+ * attempts was short:
  *
- *   records 74s, python 67s, typescript 60s, tinker 53s
+ *   records 23s, python 13s, typescript 13s, tinker 14s
  *
- * Every one of those is far below the per-wait cap, and together they are 254s
- * against the 769s the run still had of its total allowance, the first pass
- * having spent 131s. So the run held both the budget and the figure it needed
- * and discarded them, and reported all four signals as `unknown` while exiting
- * 0. The cost was not unpredictable, it was bounded and affordable, and the
- * extra signal was the whole adoption tripwire for that week.
+ * Together 63s, against roughly 750s of the total allowance still unspent. So
+ * the run again held both the budget and the figures it needed, declined to
+ * use them, and reported the whole tripwire as `unknown` while exiting 0.
  *
- * The cost stays bounded because this declines on the same two limits the
- * first pass uses, against the same running total, so honouring a wait here
- * cannot take the run past an allowance it was already keeping.
+ * The answer is not a longer cap. The caps were never the binding constraint:
+ * a single permitted wait per call site was. So a caller now follows windows
+ * for as long as this says yes, and what bounds the cost is the same running
+ * total as before plus an attempt cap, so a signal cannot spin forever on an
+ * endlessly renewing window.
  *
+ * It declines in four cases:
+ *
+ *   attempts spent   this signal has had all the attempts a run gives it. The
+ *                    quota is per token and shared, so a window that keeps
+ *                    renewing is a window this run will not outlast.
  *   no wait named    gh failed for some reason other than a rate limit, so
  *                    there is no window to wait for and nothing to decide.
  *   wait too long    one window is longer than this run will ever sit through.
- *                    735s was advertised twice on the run above, and waiting
+ *                    735s was advertised twice on 2 November 2026, and waiting
  *                    that out is worse than reporting the gap.
  *   budget spent     this wait would take the run past its total allowance.
  *
@@ -194,12 +199,20 @@ export function remainingSkipped(skipped = [], recovered = []) {
  * it here rather than inline is the split the rest of this file exists for:
  * the rule is testable without a network, the sleeping is not.
  */
-export function allowSecondPassWait({
+export function allowRetryWait({
   wait = null,
   backoffSpent = 0,
+  attemptsUsed = 0,
+  maxAttempts = Infinity,
   maxBackoffSeconds = Infinity,
   maxTotalBackoffSeconds = Infinity,
 } = {}) {
+  if (attemptsUsed >= maxAttempts) {
+    return {
+      wait: null,
+      reason: `rate limited again after ${attemptsUsed} attempt(s), which is all this run makes`,
+    };
+  }
   if (wait === null || !Number.isFinite(wait) || wait < 0) {
     return { wait: null, reason: 'GitHub named no retry delay' };
   }

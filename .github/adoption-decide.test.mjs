@@ -15,7 +15,7 @@ import {
   reportLines,
   noChangeLines,
   planSecondPass,
-  allowSecondPassWait,
+  allowRetryWait,
   remainingSkipped,
 } from './adoption-decide.mjs';
 
@@ -202,7 +202,7 @@ test('the report shows a recovered signal as measured, and a surviving gap as un
 // away a figure GitHub handed it.
 
 test('a window the run can afford is waited for', () => {
-  const allowed = allowSecondPassWait({
+  const allowed = allowRetryWait({
     wait: 74,
     backoffSpent: 131,
     maxBackoffSeconds: 660,
@@ -216,7 +216,7 @@ test('the four windows of the 12 October run were all affordable', () => {
   // first pass had already spent of its 900s. The run declined all four.
   let spent = 131;
   for (const wait of [74, 67, 60, 53]) {
-    const allowed = allowSecondPassWait({
+    const allowed = allowRetryWait({
       wait,
       backoffSpent: spent,
       maxBackoffSeconds: 660,
@@ -231,7 +231,7 @@ test('the four windows of the 12 October run were all affordable', () => {
 
 test('a window longer than the run will ever sit through is declined', () => {
   // 735s was advertised twice on that same run.
-  const allowed = allowSecondPassWait({
+  const allowed = allowRetryWait({
     wait: 735,
     backoffSpent: 0,
     maxBackoffSeconds: 660,
@@ -242,7 +242,7 @@ test('a window longer than the run will ever sit through is declined', () => {
 });
 
 test('a window that would take the run past its total allowance is declined', () => {
-  const allowed = allowSecondPassWait({
+  const allowed = allowRetryWait({
     wait: 100,
     backoffSpent: 850,
     maxBackoffSeconds: 660,
@@ -254,18 +254,125 @@ test('a window that would take the run past its total allowance is declined', ()
 
 test('a failure that names no window leaves nothing to wait for', () => {
   for (const wait of [null, undefined, NaN, -1]) {
-    const allowed = allowSecondPassWait({ wait, maxTotalBackoffSeconds: 900 });
+    const allowed = allowRetryWait({ wait, maxTotalBackoffSeconds: 900 });
     assert.equal(allowed.wait, null, `${String(wait)} is not a window`);
   }
-  assert.match(allowSecondPassWait({ wait: null }).reason, /named no retry delay/);
+  assert.match(allowRetryWait({ wait: null }).reason, /named no retry delay/);
 });
 
 test('a wait is allowed to land exactly on the total allowance', () => {
-  const allowed = allowSecondPassWait({
+  const allowed = allowRetryWait({
     wait: 50,
     backoffSpent: 850,
     maxBackoffSeconds: 660,
     maxTotalBackoffSeconds: 900,
   });
   assert.equal(allowed.wait, 50);
+});
+
+// ---------------------------------------------------------- allowRetryWait
+//
+// The run of 2 November 2026 lost all four code signals while holding both the
+// budget and the figures it needed. These pin the rule that would have kept
+// them, and the caps that stop it running away.
+
+test('a second affordable window is followed, not discarded', () => {
+  // 2 November 2026, first pass: the retry was told 33s with 52s spent. The
+  // old rule permitted one wait per call site and so never asked.
+  const allowed = allowRetryWait({
+    wait: 33,
+    backoffSpent: 52,
+    attemptsUsed: 2,
+    maxAttempts: 4,
+    maxBackoffSeconds: 660,
+    maxTotalBackoffSeconds: 900,
+  });
+  assert.equal(allowed.wait, 33);
+});
+
+test('the windows that lost 2 November 2026 are all affordable', () => {
+  // The final attempt for each signal, and the total spent by then.
+  const finals = [
+    ['records', 23, 103],
+    ['python', 13, 119],
+    ['typescript', 13, 125],
+    ['tinker', 14, 132],
+  ];
+  let extra = 0;
+  for (const [name, wait, spent] of finals) {
+    const allowed = allowRetryWait({
+      wait,
+      backoffSpent: spent,
+      attemptsUsed: 2,
+      maxAttempts: 4,
+      maxBackoffSeconds: 660,
+      maxTotalBackoffSeconds: 900,
+    });
+    assert.equal(allowed.wait, wait, `${name} should have been waited for`);
+    extra += wait;
+  }
+  // The whole tripwire was reported unknown for want of this much waiting.
+  assert.equal(extra, 63);
+  assert.ok(extra < 900 - 132, 'and the run could afford all of it');
+});
+
+test('the attempt cap stops a window that keeps renewing', () => {
+  const allowed = allowRetryWait({
+    wait: 5,
+    backoffSpent: 0,
+    attemptsUsed: 4,
+    maxAttempts: 4,
+    maxBackoffSeconds: 660,
+    maxTotalBackoffSeconds: 900,
+  });
+  assert.equal(allowed.wait, null, 'an affordable window is still refused once attempts are spent');
+  assert.match(allowed.reason, /all this run makes/);
+});
+
+test('the attempt cap is checked before the window, so a cheap window cannot buy an extra attempt', () => {
+  const spent = allowRetryWait({ wait: 1, attemptsUsed: 9, maxAttempts: 4 });
+  assert.equal(spent.wait, null);
+  assert.match(spent.reason, /all this run makes/);
+});
+
+test('allowRetryWait keeps the per-wait and total caps', () => {
+  const tooLong = allowRetryWait({
+    wait: 735,
+    attemptsUsed: 1,
+    maxAttempts: 4,
+    maxBackoffSeconds: 660,
+    maxTotalBackoffSeconds: 900,
+  });
+  assert.equal(tooLong.wait, null);
+  assert.match(tooLong.reason, /longer than this run will wait/);
+
+  const broke = allowRetryWait({
+    wait: 100,
+    backoffSpent: 850,
+    attemptsUsed: 1,
+    maxAttempts: 4,
+    maxBackoffSeconds: 660,
+    maxTotalBackoffSeconds: 900,
+  });
+  assert.equal(broke.wait, null);
+  assert.match(broke.reason, /waited enough already/);
+});
+
+test('allowRetryWait still declines when GitHub named no window', () => {
+  for (const wait of [null, undefined, NaN, -1, Infinity]) {
+    const allowed = allowRetryWait({ wait, attemptsUsed: 1, maxAttempts: 4 });
+    assert.equal(allowed.wait, null, `${String(wait)} is not a window`);
+  }
+});
+
+test('a caller that tracks no attempts gets no cap, only the wait and budget rules', () => {
+  // The defaults must not read as "zero attempts left", or a caller that does
+  // not count attempts would be refused every window.
+  const allowed = allowRetryWait({
+    wait: 60,
+    backoffSpent: 0,
+    maxBackoffSeconds: 660,
+    maxTotalBackoffSeconds: 900,
+  });
+  assert.equal(allowed.wait, 60);
 });
