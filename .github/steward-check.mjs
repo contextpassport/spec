@@ -26,21 +26,11 @@ import { execFileSync } from 'node:child_process';
 import {
   triage, approversFromReviews, CATEGORIES, OUTSIDE_CATEGORIES, HEADINGS, GUIDANCE,
 } from './steward-decide.mjs';
-
-const DEFAULT_REPOS = [
-  'contextpassport/spec',
-  'contextpassport/python',
-  'contextpassport/typescript',
-  'contextpassport/conformance-tests',
-  'contextpassport/verifiable-agent-template',
-  'contextpassport/tinker-provenance',
-];
+import { reposFromEnv } from './repos.mjs';
 
 const CODEOWNERS = '.github/CODEOWNERS';
 
-const repos = (process.env.REPOS || process.env.REPO || DEFAULT_REPOS.join(' '))
-  .split(/\s+/)
-  .filter(Boolean);
+const repos = reposFromEnv();
 const graceDays = Number(process.env.GRACE_DAYS || '7');
 
 function gh(args) {

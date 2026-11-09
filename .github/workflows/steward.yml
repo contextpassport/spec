@@ -1,7 +1,7 @@
 name: Steward
 
 # Low-touch upkeep for a specification that does not need daily attention.
-# Three jobs, in order of how much the news matters.
+# Four steps, in order of how much the news matters.
 #
 # 1. Somebody starts using this and nobody notices. Adoption of a CC0 standard
 #    is invisible by design: nobody signs up, nobody logs in, and there is no
@@ -24,16 +24,31 @@ name: Steward
 #
 #    SDK pull requests land in the other Context Passport repositories, not
 #    here. The contribution check therefore scans every repository in the
-#    DEFAULT_REPOS list carried by .github/steward-check.mjs and
-#    .github/adoption-check.mjs. That list is deliberately not duplicated here:
-#    a REPOS value set in this file silently overrides the scripts, and when the
-#    two disagree the workflow wins without saying so. REPOS remains supported
-#    for running either script by hand against a subset. Those repositories are
+#    DEFAULT_REPOS list carried by .github/repos.mjs, which is the one copy all
+#    three checks read. That list is deliberately not duplicated here: a REPOS
+#    value set in this file silently overrides the scripts, and when the two
+#    disagree the workflow wins without saying so. REPOS remains supported for
+#    running any of the scripts by hand against a subset. Those repositories are
 #    public; the Actions token is enough for issue, pull request, comment, and
 #    review reads. Maintainers are taken from .github/CODEOWNERS in the
 #    checkout, which GOVERNANCE.md names as the authoritative list.
 #
-# 3. The automation does not switch itself off. GitHub disables scheduled
+# 3. The watchers are still watching. GitHub switches off a scheduled workflow
+#    after 60 days without repository activity, and the heartbeat below only
+#    stops that happening again; it does not notice that it already has. In
+#    November 2026 two repositories were found with their only workflow in
+#    disabled_inactivity, last run successful, nothing said. The run list and
+#    the Actions tab both read as healthy, because a workflow that does not run
+#    produces no failure. So .github/workflow-state-check.mjs reads the state of
+#    every workflow in the watched repositories and fails on any that is not
+#    active. One API call per repository, which is why actions: read is below.
+#
+#    It sits after the contribution check rather than first because a dark
+#    suite is a risk and an unanswered contributor is a loss. Enabling a
+#    disabled workflow is a manual step either way, and where that workflow
+#    also produces a required status check it gates the merge of its own fix.
+#
+# 4. The automation does not switch itself off. GitHub disables scheduled
 #    workflows after 60 days without repository activity, and any quiet stretch
 #    can reach that. A monthly empty commit on a side branch counts as activity
 #    and keeps this workflow alive.
@@ -54,6 +69,7 @@ permissions:
   contents: write
   issues: read
   pull-requests: read
+  actions: read      # workflow state, for step 3
 
 env:
   GRACE_DAYS: '7'
@@ -80,7 +96,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: node .github/steward-check.mjs
 
-      # 3. Keep the schedule from being auto-disabled. Runs last and always,
+      # 3. Workflows that have stopped running. Always, because a disabled
+      #    suite is exactly what a quiet repository hides.
+      - name: Check that watched workflows are still active
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/workflow-state-check.mjs
+
+      # 4. Keep the schedule from being auto-disabled. Runs last and always,
       #    so a genuine alert above cannot stop the automation staying alive.
       - name: Monthly heartbeat
         if: always()
