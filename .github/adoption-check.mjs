@@ -104,6 +104,7 @@ import {
   allowRetryWait,
   remainingSkipped,
 } from './adoption-decide.mjs';
+import { reposFromEnv } from './repos.mjs';
 
 const STATE = '.github/adoption.json';
 
@@ -143,17 +144,7 @@ const positiveInt = (value, fallback) => {
 };
 const MAX_SEARCH_ATTEMPTS = positiveInt(process.env.MAX_SEARCH_ATTEMPTS, 4);
 let backoffSpent = 0;
-const DEFAULT_REPOS = [
-  'contextpassport/spec',
-  'contextpassport/python',
-  'contextpassport/typescript',
-  'contextpassport/conformance-tests',
-  'contextpassport/verifiable-agent-template',
-  'contextpassport/tinker-provenance',
-];
-const repos = (process.env.REPOS || process.env.REPO || DEFAULT_REPOS.join(' '))
-  .split(/\s+/)
-  .filter(Boolean);
+const repos = reposFromEnv();
 
 // Queries chosen to be specific enough that a hit is real. Broad ones like
 // `"schema_version": "2.0"` return thousands of unrelated files and are
