@@ -64,7 +64,23 @@ const canon = (v) =>
  * the readable failure this file exists to produce.
  */
 async function checkOne({ local, published, label, downHint }) {
-  const res = await fetch(published, { headers: { accept: 'application/json' } });
+  // fetch rejects rather than resolving when the host does not answer at all:
+  // DNS failure, refused connection, TLS error, timeout. That is the outage
+  // this check exists to catch, and it is the case downHint is written for, so
+  // it has to be caught here. Left to reject, it reaches the top level as an
+  // unhandled rejection and prints a Node stack trace, which buries the hint
+  // under the one failure mode that most needs it.
+  let res;
+  try {
+    res = await fetch(published, { headers: { accept: 'application/json' } });
+  } catch (e) {
+    return [
+      `${published} could not be reached: ${e.cause?.code ?? e.message}`,
+      ...downHint,
+      'If this runner has no network, that is a problem here rather than with',
+      'the published schema. From CI, treat it as the host being unreachable.',
+    ];
+  }
 
   if (res.status !== 200) {
     return [
